@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from . import db
-from .engine import TickerNotFound, analyze_ticker
+from .engine import TickerNotFound, analyze_ticker, price_chart
 
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -87,6 +87,19 @@ def get_stock(ticker: str):
     result["name"] = _names.get(ticker, ticker.replace(".NS", ""))
     db.set_cached(ticker, result, is_live=True)
     return result
+
+
+@app.get("/api/stock/{ticker}/chart")
+def get_stock_chart(ticker: str):
+    ticker = ticker.upper()
+    if not ticker.endswith(".NS"):
+        ticker = ticker + ".NS"
+    try:
+        return price_chart(ticker)
+    except TickerNotFound:
+        raise HTTPException(status_code=404, detail=f"No price data found for {ticker}.")
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Couldn't load a chart for {ticker} right now: {e}")
 
 
 # ---- static frontend ----

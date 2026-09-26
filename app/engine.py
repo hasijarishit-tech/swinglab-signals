@@ -197,3 +197,58 @@ def analyze_ticker(ticker: str) -> dict:
         "live": True,
         "strategies": out,
     }
+
+
+def price_chart(ticker: str, max_points: int = 400) -> dict:
+    """Fetch one ticker's price history live and return a downsampled series
+    for plotting, plus Strategy 1's real buy/sell markers on it. Always
+    live — unlike the main verdict, there's no cache to go stale here, so
+    this chart is the most current the data gets."""
+    ticker = ticker.upper()
+    if not ticker.endswith(".NS"):
+        ticker = ticker + ".NS"
+
+    try:
+        ohlcv, dividends, splits = fetch_ohlcv_with_events(ticker, START, END)
+    except DataFetchError as e:
+        raise TickerNotFound(str(e))
+
+    signal_close = split_adjusted_close(ohlcv["Close"], splits)
+    dividend = align_dividends(dividends, ohlcv.index)
+    sma_period = int(CHOSEN["S1"]["sma_period"])
+    sma = signal_close.rolling(sma_period, min_periods=sma_period).mean()
+
+    n = len(signal_close)
+    date_index = signal_close.index
+    stride = max(1, n // max_points)
+    sample_pos = list(range(0, n, stride))
+    if sample_pos[-1] != n - 1:
+        sample_pos.append(n - 1)
+
+    trades: list[dict] = []
+    if n > 1 and sma.notna().any():
+        close_panel = signal_close.to_frame(name=ticker)
+        div_panel = dividend.to_frame(name=ticker)
+        w1 = ma_trend.compute_target_weights(close_panel, sma_period=sma_period)
+        r1 = PortfolioEngine(100_000.0).run(close_panel, w1, div_panel)
+        for p in r1.closed_positions:
+            entry_pos = date_index.get_indexer([p.entry_date], method="nearest")[0]
+            exit_pos = date_index.get_indexer([p.exit_date], method="nearest")[0]
+            trades.append({
+                "entry_frac": entry_pos / (n - 1), "entry_price": round(p.entry_price, 2), "entry_date": str(p.entry_date.date()),
+                "exit_frac": exit_pos / (n - 1), "exit_price": round(p.exit_price, 2), "exit_date": str(p.exit_date.date()),
+            })
+        for p in r1.open_positions:
+            entry_pos = date_index.get_indexer([p.entry_date], method="nearest")[0]
+            trades.append({
+                "entry_frac": entry_pos / (n - 1), "entry_price": round(p.entry_price, 2), "entry_date": str(p.entry_date.date()),
+            })
+
+    return {
+        "ticker": ticker,
+        "sma_period": sma_period,
+        "dates": [str(date_index[i].date()) for i in sample_pos],
+        "close": [round(float(signal_close.iloc[i]), 2) for i in sample_pos],
+        "sma": [None if pd.isna(sma.iloc[i]) else round(float(sma.iloc[i]), 2) for i in sample_pos],
+        "trades": trades,
+    }

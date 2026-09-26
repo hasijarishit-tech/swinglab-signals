@@ -84,6 +84,12 @@
 
   .as-of-note{ text-align:center; font-size:12px; color:var(--muted); margin-top:10px; font-family:var(--mono); }
 
+  /* ---------- price chart ---------- */
+  .chart-wrap{ margin-top:22px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px 14px; box-shadow:var(--shadow); }
+  .chart-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .chart-caption{ margin-top:6px; font-size:11.5px; color:var(--muted); text-align:center; }
+  .chart-caption .dot-buy{ color:var(--pos); } .chart-caption .dot-sell{ color:var(--neg); }
+
   /* ---------- strategy cards ---------- */
   .cards{ display:flex; flex-direction:column; gap:12px; margin-top:26px; }
   .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
@@ -123,6 +129,18 @@
   .disclaimer{ margin-top:30px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:16px 18px; font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
   .disclaimer b{ color:var(--ink); }
 
+  /* ---------- strategy performance (portfolio-level backtest charts) ---------- */
+  .perf-section{ margin-top:40px; }
+  .perf-section h2{ font-size:17px; text-align:center; }
+  .perf-section .perf-sub{ text-align:center; font-size:13px; color:var(--ink-soft); margin-top:6px; max-width:52ch; margin-left:auto; margin-right:auto; }
+  .perf-grid{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:20px; }
+  @media(min-width:640px){ .perf-grid{ grid-template-columns:1fr 1fr; } }
+  .perf-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+  .perf-card img{ width:100%; display:block; background:var(--surface-2); }
+  .perf-card .cap{ padding:12px 14px; }
+  .perf-card .cap .t{ font-family:var(--serif); font-weight:600; font-size:13.5px; }
+  .perf-card .cap .d{ font-size:12px; color:var(--ink-soft); margin-top:3px; line-height:1.5; }
+
   footer{ margin-top:40px; text-align:center; font-size:11.5px; color:var(--muted); }
 </style>
 
@@ -148,6 +166,37 @@
 
   <div class="disclaimer">
     <b>Read this before acting on anything above:</b> each card shows what a rule says and how it did in the past — not advice, not a buy/sell call, and not a promise it keeps working. 5 rules agreeing is 5 opinions, not proof.
+  </div>
+
+  <div class="perf-section">
+    <h2>How the 5 strategies compared, 2010–2026</h2>
+    <p class="perf-sub">Not this one stock — the full Nifty 500 backtest each rule was built and judged on.</p>
+    <div class="perf-grid">
+      <div class="perf-card">
+        <img src="/assets/charts/growth_of_rupee.png" alt="Growth of ₹1 invested in each strategy, 2010–2026" loading="lazy">
+        <div class="cap"><div class="t">Growth of ₹1</div><div class="d">What ₹1 invested in 2010 became under each strategy — the headline comparison, before you look at how bumpy the ride was.</div></div>
+      </div>
+      <div class="perf-card">
+        <img src="/assets/charts/drawdown.png" alt="Drawdown from peak over time for each strategy" loading="lazy">
+        <div class="cap"><div class="t">Drawdown</div><div class="d">How far each strategy fell from its prior peak at every point in time — the real cost of the return above.</div></div>
+      </div>
+      <div class="perf-card">
+        <img src="/assets/charts/rolling_sharpe.png" alt="Rolling Sharpe ratio for each strategy" loading="lazy">
+        <div class="cap"><div class="t">Rolling Sharpe</div><div class="d">Risk-adjusted return in 3-year windows — whether an edge held up across different market regimes, or only in one.</div></div>
+      </div>
+      <div class="perf-card">
+        <img src="/assets/charts/rolling_cagr.png" alt="Rolling CAGR for each strategy" loading="lazy">
+        <div class="cap"><div class="t">Rolling CAGR</div><div class="d">Annualized return in the same rolling windows — a strategy that only wins in one stretch shows up here.</div></div>
+      </div>
+      <div class="perf-card">
+        <img src="/assets/charts/annual_returns.png" alt="Calendar-year returns for each strategy" loading="lazy">
+        <div class="cap"><div class="t">Annual returns</div><div class="d">Calendar-year-by-calendar-year returns — where consistency (or the lack of it) is easiest to see.</div></div>
+      </div>
+      <div class="perf-card">
+        <img src="/assets/charts/turnover.png" alt="Portfolio turnover for each strategy" loading="lazy">
+        <div class="cap"><div class="t">Turnover</div><div class="d">How much of the portfolio traded over each period — the real-world cost the return-only chart hides.</div></div>
+      </div>
+    </div>
   </div>
 
   <footer>SwingLab · Nifty 500 · research tool, not investment advice</footer>
@@ -331,17 +380,78 @@
     notFoundEl.hidden = false;
   }
 
+  function renderChart(chart){
+    const svg = document.getElementById('price-chart');
+    const caption = document.getElementById('chart-caption');
+    if (!svg || !caption) return;
+    if (!chart || !chart.close || chart.close.length < 2){
+      caption.textContent = 'Price chart unavailable for this stock.';
+      return;
+    }
+    const W = 680, H = 220, padL = 56, padR = 10, padT = 12, padB = 20;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const n = chart.close.length;
+    const validSma = chart.sma.filter(v => v != null);
+    // log scale: a 16-year price series often spans a huge multiple (splits,
+    // bonuses, compounding) — a linear axis squashes the early years flat.
+    const yMin = Math.min(...chart.close, ...validSma);
+    const yMax = Math.max(...chart.close, ...validSma);
+    const logPad = (Math.log(yMax) - Math.log(yMin)) * 0.08 || 0.05;
+    const y0 = Math.log(yMin) - logPad, y1 = Math.log(yMax) + logPad;
+    const xAt = i => padL + (i / (n - 1)) * plotW;
+    const yAt = v => padT + (1 - (Math.log(v) - y0) / (y1 - y0)) * plotH;
+
+    const pricePts = chart.close.map((c, i) => `${xAt(i).toFixed(1)},${yAt(c).toFixed(1)}`).join(' ');
+
+    let smaSegs = [], cur = [];
+    chart.sma.forEach((v, i) => {
+      if (v == null){ if (cur.length > 1) smaSegs.push(cur); cur = []; return; }
+      cur.push(`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`);
+    });
+    if (cur.length > 1) smaSegs.push(cur);
+
+    const markers = (chart.trades || []).map(t => {
+      const ex = t.entry_frac * (n - 1);
+      let s = `<circle cx="${xAt(ex).toFixed(1)}" cy="${yAt(t.entry_price).toFixed(1)}" r="4" style="fill:var(--pos);stroke:var(--surface)" stroke-width="1.5"><title>Buy ${t.entry_date} @ ₹${t.entry_price}</title></circle>`;
+      if (t.exit_frac != null){
+        const xx = t.exit_frac * (n - 1);
+        s += `<circle cx="${xAt(xx).toFixed(1)}" cy="${yAt(t.exit_price).toFixed(1)}" r="4" style="fill:var(--neg);stroke:var(--surface)" stroke-width="1.5"><title>Sell ${t.exit_date} @ ₹${t.exit_price}</title></circle>`;
+      }
+      return s;
+    }).join('');
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = `
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+plotH}" style="stroke:var(--border)"/>
+      <line x1="${padL}" y1="${padT+plotH}" x2="${padL+plotW}" y2="${padT+plotH}" style="stroke:var(--border)"/>
+      <text x="${padL-8}" y="${padT+4}" text-anchor="end" font-size="10" font-family="var(--mono)" style="fill:var(--muted)">₹${Math.round(Math.exp(y1)).toLocaleString('en-IN')}</text>
+      <text x="${padL-8}" y="${padT+plotH}" text-anchor="end" font-size="10" font-family="var(--mono)" style="fill:var(--muted)">₹${Math.round(Math.exp(y0)).toLocaleString('en-IN')}</text>
+      <text x="${padL}" y="${H-2}" text-anchor="start" font-size="10" font-family="var(--mono)" style="fill:var(--muted)">${chart.dates[0]}</text>
+      <text x="${padL+plotW}" y="${H-2}" text-anchor="end" font-size="10" font-family="var(--mono)" style="fill:var(--muted)">${chart.dates[n-1]}</text>
+      ${smaSegs.map(seg => `<polyline points="${seg.join(' ')}" fill="none" style="stroke:var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>`).join('')}
+      <polyline points="${pricePts}" fill="none" style="stroke:var(--ink)" stroke-width="1.8"/>
+      ${markers}
+    `;
+    const hasTrades = (chart.trades || []).length > 0;
+    caption.innerHTML = `Price, split-adjusted, with its ${chart.sma_period}-day trend line (dashed)` +
+      (hasTrades ? ` · <span class="dot-buy">●</span> buy · <span class="dot-sell">●</span> sell — Strategy 1's own rule, computed live` : '');
+  }
+
   async function showStock(ticker, isExample){
     if (!isExample) showLoading(ticker);
-    let result;
+    let result, chart = null;
     try {
-      const resp = await fetch(`${API}/api/stock/${encodeURIComponent(ticker)}`);
+      const [resp, chartResp] = await Promise.all([
+        fetch(`${API}/api/stock/${encodeURIComponent(ticker)}`),
+        fetch(`${API}/api/stock/${encodeURIComponent(ticker)}/chart`).catch(() => null),
+      ]);
       if (resp.status === 404){
         showError(ticker, `Yahoo Finance has no data for "${ticker.replace('.NS','')}" — check it's a real, currently-listed NSE symbol.`);
         return;
       }
       if (!resp.ok) throw new Error(`server returned ${resp.status}`);
       result = await resp.json();
+      if (chartResp && chartResp.ok) chart = await chartResp.json();
     } catch (e) {
       showError(ticker, `Couldn't reach the backend to analyze "${ticker.replace('.NS','')}" (${e.message}). Try again in a moment.`);
       return;
@@ -376,6 +486,10 @@
         ${isExample ? '<div class="example-flag">Showing as an example — search above for any stock</div>' : ''}
         ${(!isExample && isLive) ? '<div class="example-flag">Freshly analyzed just now — not from the pre-built database</div>' : ''}
       </div>
+      <div class="chart-wrap">
+        <svg id="price-chart" viewBox="0 0 680 220" preserveAspectRatio="none"></svg>
+        <div class="chart-caption" id="chart-caption">Loading price chart…</div>
+      </div>
       <div class="tally">
         <div class="big" style="color:${verdictColor}">${verdict}</div>
         <div class="lbl">${buyCount} of ${rated || 5} rated strategies say buy/hold${avoidCount ? `, ${avoidCount} say avoid/sell` : ''}</div>
@@ -384,6 +498,7 @@
       <div class="as-of-note">Monthly-rebalance strategies (S2, S4) reflect the last month-end decision · quarterly (S3, S5) reflect the last quarter-end · S1 is checked daily. Data as of ${result.as_of}.</div>
       <div class="cards">${STRATEGY_ORDER.map(k => cardFor(k, stockEntry[k], isLive)).join('')}</div>
     `;
+    renderChart(chart);
     window.scrollTo({top: resultsEl.offsetTop - 20, behavior: 'smooth'});
   }
 

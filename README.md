@@ -45,16 +45,31 @@ services on your behalf. Both are free.
 
 Every time you `git push` again, Render redeploys automatically.
 
+## Is the data live?
+
+- **Any stock you search that isn't pre-built**: yes — fetched and scored
+  from Yahoo (price) and screener.in (fundamentals) at the moment you ask.
+- **Everything, including the 500 pre-built stocks**: a cached result is
+  reused only while it's less than 4 days old (`app/db.py`, `MAX_AGE_DAYS`)
+  — old enough to survive a weekend, not old enough to go stale. Past
+  that, the next request re-analyzes it live and re-caches the fresh
+  result. So nothing shown is ever more than a few days old.
+- **The price chart on each stock's page**: always live, every time, no
+  cache — it's a cheap fetch (price only, no fundamentals), so there was
+  no reason to let it go stale.
+
 ## The one real limitation to know about
 
 Render's **free tier** doesn't keep a persistent disk — the small database
 that caches stocks you've looked up gets wiped whenever the free instance
 restarts (which happens after ~15 minutes of no traffic, and on every
 redeploy). In practice this means:
-- The 500 pre-built stocks are always there (they get reloaded from
-  `data/lookup_bundle.json` on every startup).
-- A stock you fetched live stays instant *for a while*, then eventually
-  needs re-fetching (still just a few seconds) after the instance sleeps.
+- The 500 pre-built stocks reload from `data/lookup_bundle.json` on every
+  startup, so they're always there — just possibly due for their own
+  4-day refresh sooner after a restart.
+- A stock you fetched live stays cached *for a while*, then eventually
+  needs re-fetching (still just a few seconds) after the instance sleeps
+  or the 4-day window passes, whichever comes first.
 
 If you want live-fetched stocks to stay cached forever, Render's paid tier
 (~$7/month) adds a persistent disk — a one-line change to `render.yaml`
@@ -65,9 +80,10 @@ Not necessary to get started.
 
 ```
 app/
-  main.py         FastAPI app — the 3 endpoints the frontend calls
-  engine.py       fetches + scores ONE stock live (Yahoo + screener.in)
-  db.py           tiny SQLite cache
+  main.py         FastAPI app — the endpoints the frontend calls
+  engine.py       fetches + scores ONE stock live (Yahoo + screener.in),
+                  and builds its price chart
+  db.py           tiny SQLite cache, with a 4-day freshness check
   swinglab/       the backtesting engine itself (price data, fundamentals,
                   the trend-following strategy, portfolio simulation)
 data/
@@ -76,6 +92,10 @@ data/
   verdicts.json           which parameters each strategy uses
 static/
   index.html      the whole frontend — one file, no build step
+  charts/         6 PNGs from the original Nifty 500 backtest (growth of
+                  ₹1, drawdown, rolling Sharpe/CAGR, annual returns,
+                  turnover) — how the 5 strategies compared overall,
+                  shown below the per-stock search
 ```
 
 ## Known scope limits, stated plainly

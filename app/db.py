@@ -9,9 +9,11 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent / "data" / "cache.db"
+MAX_AGE_DAYS = 4  # covers weekends/holidays; a stale entry gets re-analyzed live on next request
 
 
 @contextmanager
@@ -38,9 +40,24 @@ def init_db() -> None:
 
 
 def get_cached(ticker: str) -> dict | None:
+    """Returns the cached entry, or None if there isn't one *or* it's gone
+    stale — judged by the market data's own `as_of` date, not by when it
+    was written to the cache (a pre-seeded row is written fresh at every
+    startup even though its underlying numbers might be weeks old)."""
     with _conn() as c:
         row = c.execute("SELECT data FROM stocks WHERE ticker = ?", (ticker,)).fetchone()
-        return json.loads(row[0]) if row else None
+        if row is None:
+            return None
+        data = json.loads(row[0])
+        as_of = data.get("as_of")
+        if as_of:
+            try:
+                age_days = (datetime.utcnow().date() - datetime.strptime(as_of, "%Y-%m-%d").date()).days
+                if age_days > MAX_AGE_DAYS:
+                    return None
+            except ValueError:
+                pass
+        return data
 
 
 def set_cached(ticker: str, data: dict, is_live: bool) -> None:
