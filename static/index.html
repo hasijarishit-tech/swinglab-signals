@@ -271,9 +271,25 @@
 
   .not-found{ margin:40px auto 0; max-width:560px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:24px; text-align:center; }
   .not-found p{ font-size:13.5px; color:var(--ink-soft); line-height:1.6; }
+
+  /* ============ login ============ */
+  .user-chip{ display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11.5px; color:var(--muted); }
+  .user-chip button{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:2px 4px; line-height:1; }
+  .user-chip button:hover{ color:var(--ink); }
+  .login-wrap{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .login-card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:34px 30px; box-shadow:var(--shadow); }
+  .login-card .brand{ justify-content:center; font-size:17px; margin-bottom:4px; }
+  .login-sub{ text-align:center; font-size:13px; color:var(--ink-soft); margin-top:6px; margin-bottom:24px; }
+  .login-card label{ font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); display:block; margin-bottom:6px; margin-top:14px; }
+  .login-card input{ width:100%; font-family:var(--mono); font-size:14px; padding:11px 13px; border:1.5px solid var(--border); border-radius:9px; background:var(--surface-2); color:var(--ink); outline:none; }
+  .login-card input:focus{ border-color:var(--accent); }
+  .login-error{ margin-top:12px; font-size:12px; color:var(--neg); background:color-mix(in srgb, var(--neg) 12%, var(--surface)); border:1px solid color-mix(in srgb, var(--neg) 35%, var(--border)); border-radius:8px; padding:9px 11px; }
+  .demo-box{ margin-top:26px; padding-top:22px; border-top:1px dashed var(--border); }
+  .demo-box p{ font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.5; }
+  .demo-creds{ margin-top:10px; font-family:var(--mono); font-size:13px; text-align:center; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px; letter-spacing:.03em; }
 </style>
 
-<div class="topnav">
+<div class="topnav" id="topnav" hidden>
   <div class="topnav-in">
     <div class="brand" data-nav="#/"><span class="dot"></span>SWINGLAB</div>
     <nav class="mainlinks" id="mainlinks">
@@ -287,19 +303,21 @@
     <div class="nav-right">
       <div class="marketpill" id="market-pill">·</div>
       <button class="searchbtn" id="open-cmdk">Search <kbd>⌘K</kbd></button>
+      <div class="user-chip" id="user-chip" hidden></div>
     </div>
   </div>
 </div>
 
+<div id="login-root" hidden></div>
 <div id="cmdk-root"></div>
-<div class="wrap" id="view"></div>
-<div class="wrap"><footer>SwingLab is a personal research project by Rishit — built to make my investing process more systematic.<br><a href="https://github.com/hasijarishit-tech/swinglab-signals" target="_blank" rel="noopener">github.com/hasijarishit-tech/swinglab-signals</a></footer></div>
+<div class="wrap" id="view" hidden></div>
+<div class="wrap" id="footer-wrap" hidden><footer>SwingLab is a personal research project by Rishit — built to make my investing process more systematic.<br><a href="https://github.com/hasijarishit-tech/swinglab-signals" target="_blank" rel="noopener">github.com/hasijarishit-tech/swinglab-signals</a></footer></div>
 
 <script>
 (function(){
   const API = '';
   const $view = document.getElementById('view');
-  let META = null, MARKET = null, NAMES = {};
+  let META = null, MARKET = null, NAMES = {}, CURRENT_USER = null;
 
   /* ---------------- utils ---------------- */
   function fmtPct(x, d){ d = d==null?1:d; return x==null ? '—' : (x>=0?'+':'') + x.toFixed(d) + '%'; }
@@ -307,8 +325,88 @@
   function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
   function go(hash){ location.hash = hash; }
 
-  /* ---------------- boot: load meta + market ---------------- */
+  /* ---------------- auth gate ---------------- */
+  function showApp(){
+    document.getElementById('login-root').hidden = true;
+    document.getElementById('topnav').hidden = false;
+    document.getElementById('footer-wrap').hidden = false;
+    $view.hidden = false;
+  }
+
+  function renderUserChip(){
+    const el = document.getElementById('user-chip');
+    el.hidden = false;
+    el.innerHTML = `<span>${esc(CURRENT_USER.username)}${CURRENT_USER.is_demo ? ' · demo' : ''}</span><button id="logout-btn" title="Sign out">⎋</button>`;
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try{ await fetch(`${API}/api/logout`, {method:'POST'}); }catch(e){}
+      location.reload();
+    });
+  }
+
+  function showLogin(){
+    document.getElementById('topnav').hidden = true;
+    document.getElementById('footer-wrap').hidden = true;
+    $view.hidden = true;
+    const root = document.getElementById('login-root');
+    root.hidden = false;
+    root.innerHTML = `
+      <div class="login-wrap">
+        <div class="login-card">
+          <div class="brand"><span class="dot"></span>SWINGLAB</div>
+          <p class="login-sub">Personal investing research lab. Sign in to continue.</p>
+          <form id="login-form">
+            <label>Username</label>
+            <input id="login-username" autocomplete="username" required>
+            <label>Password</label>
+            <input id="login-password" type="password" autocomplete="current-password" required>
+            <div class="login-error" id="login-error" hidden></div>
+            <button type="submit" class="btn primary" style="width:100%;margin-top:18px;padding:12px">Sign in</button>
+          </form>
+          <div class="demo-box">
+            <div class="eyebrow">Just visiting?</div>
+            <p>Use the demo account — full read access, nothing to set up.</p>
+            <div class="demo-creds">demo / demo1234</div>
+            <button class="btn" id="demo-login-btn" style="width:100%;margin-top:10px">Continue as demo</button>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await attemptLogin(document.getElementById('login-username').value.trim(), document.getElementById('login-password').value);
+    });
+    document.getElementById('demo-login-btn').addEventListener('click', () => attemptLogin('demo', 'demo1234'));
+  }
+
+  async function attemptLogin(username, password){
+    const errEl = document.getElementById('login-error');
+    errEl.hidden = true;
+    if (!username || !password) return;
+    try{
+      const r = await fetch(`${API}/api/login`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password}),
+      });
+      if (!r.ok){ errEl.textContent = 'Wrong username or password.'; errEl.hidden = false; return; }
+      CURRENT_USER = await r.json();
+      showApp();
+      renderUserChip();
+      await afterAuthBoot();
+    }catch(e){ errEl.textContent = 'Could not reach the server. Try again in a moment.'; errEl.hidden = false; }
+  }
+
+  /* ---------------- boot: check session, then load meta + market ---------------- */
   async function boot(){
+    try{
+      const r = await fetch(`${API}/api/me`);
+      if (!r.ok){ showLogin(); return; }
+      CURRENT_USER = await r.json();
+    }catch(e){ showLogin(); return; }
+    showApp();
+    renderUserChip();
+    await afterAuthBoot();
+  }
+
+  async function afterAuthBoot(){
     try{
       const r = await fetch(`${API}/api/meta`);
       META = await r.json();

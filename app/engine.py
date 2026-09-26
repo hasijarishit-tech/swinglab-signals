@@ -46,18 +46,37 @@ class TickerNotFound(Exception):
 _CACHE_TTL_SECONDS = 120
 _cache_lock = threading.Lock()
 _cache: dict[str, tuple[float, object]] = {}
+_cache_key_locks: dict[str, threading.Lock] = {}
+_cache_key_locks_guard = threading.Lock()
 
 
 def _cached(key: str, compute):
+    """Holding `_cache_lock` only around the dict read/write (not around
+    `compute()` itself) looks safe but isn't: on a real request, 3 threads
+    hit the same key within milliseconds of each other, all see a miss, and
+    all three run `compute()` in parallel — because a blocking network call
+    releases the GIL for the other threads to run. That defeated the whole
+    point of this cache under real concurrent load. A per-key lock held
+    around `compute()` makes the 2nd and 3rd caller actually wait for the
+    1st instead of redoing its work."""
     now = time.time()
     with _cache_lock:
         hit = _cache.get(key)
         if hit is not None and now - hit[0] < _CACHE_TTL_SECONDS:
             return hit[1]
-    value = compute()
-    with _cache_lock:
-        _cache[key] = (now, value)
-    return value
+
+    with _cache_key_locks_guard:
+        key_lock = _cache_key_locks.setdefault(key, threading.Lock())
+
+    with key_lock:
+        with _cache_lock:
+            hit = _cache.get(key)
+            if hit is not None and time.time() - hit[0] < _CACHE_TTL_SECONDS:
+                return hit[1]
+        value = compute()
+        with _cache_lock:
+            _cache[key] = (time.time(), value)
+        return value
 
 
 def _get_price_events(ticker: str):

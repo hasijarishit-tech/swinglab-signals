@@ -12,12 +12,13 @@ import threading
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
-from . import db
+from . import auth, db
 from .engine import TickerNotFound, analyze_ticker, price_chart, fundamentals_detail
 from .market import get_market_snapshot
 
@@ -49,19 +50,56 @@ def startup() -> None:
     _meta["chosen_params"] = bundle["chosen_params"]
     _meta["as_of"] = bundle["as_of"]
 
+    if auth.GENERATED_OWNER_PASSWORD:
+        print("\n" + "=" * 60)
+        print("No SWINGLAB_PASSWORD set — generated a login for this run:")
+        print(f"  username: {auth.OWNER_USERNAME}")
+        print(f"  password: {auth.GENERATED_OWNER_PASSWORD}")
+        print("Set SWINGLAB_USERNAME / SWINGLAB_PASSWORD as environment")
+        print("variables for a permanent login that survives a restart.")
+        print("=" * 60 + "\n")
+
 
 @app.get("/api/health")
 def health():
     return {"status": "ok", "cached_tickers": db.count()}
 
 
+class LoginBody(BaseModel):
+    username: str
+    password: str
+
+
+@app.post("/api/login")
+def login(body: LoginBody, response: Response):
+    if not auth.check_credentials(body.username, body.password):
+        raise HTTPException(status_code=401, detail="Wrong username or password.")
+    token = auth.make_session_token(body.username)
+    response.set_cookie(
+        auth.COOKIE_NAME, token, max_age=auth.SESSION_MAX_AGE_SECONDS,
+        httponly=True, samesite="lax",
+    )
+    return {"username": body.username, "is_demo": body.username == auth.DEMO_USERNAME}
+
+
+@app.post("/api/logout")
+def logout(response: Response):
+    response.delete_cookie(auth.COOKIE_NAME)
+    return {"status": "ok"}
+
+
+@app.get("/api/me")
+def me(username: str = Depends(auth.require_login)):
+    return {"username": username, "is_demo": username == auth.DEMO_USERNAME}
+
+
 @app.get("/api/meta")
-def meta():
+def meta(username: str = Depends(auth.require_login)):
     return _meta
 
 
 @app.get("/api/search")
-def search(q: str = ""):
+def search(q: str = "", username: str = Depends(auth.require_login)):
     q = q.strip().lower()
     if not q:
         return []
@@ -75,7 +113,7 @@ def search(q: str = ""):
 
 
 @app.get("/api/stock/{ticker}")
-def get_stock(ticker: str):
+def get_stock(ticker: str, username: str = Depends(auth.require_login)):
     ticker = ticker.upper()
     if not ticker.endswith(".NS"):
         ticker = ticker + ".NS"
@@ -97,7 +135,7 @@ def get_stock(ticker: str):
 
 
 @app.get("/api/market")
-def market():
+def market(username: str = Depends(auth.require_login)):
     now = time.time()
     if _market_cache["data"] is None or now - _market_cache["ts"] > MARKET_CACHE_TTL_SECONDS:
         with _market_lock:
@@ -109,14 +147,14 @@ def market():
 
 
 @app.get("/api/strategy-lab")
-def strategy_lab():
+def strategy_lab(username: str = Depends(auth.require_login)):
     if _strategy_lab is None:
         raise HTTPException(status_code=404, detail="Strategy lab data not available.")
     return _strategy_lab
 
 
 @app.get("/api/stock/{ticker}/fundamentals")
-def get_fundamentals(ticker: str):
+def get_fundamentals(ticker: str, username: str = Depends(auth.require_login)):
     ticker = ticker.upper()
     if not ticker.endswith(".NS"):
         ticker = ticker + ".NS"
@@ -129,7 +167,7 @@ def get_fundamentals(ticker: str):
 
 
 @app.get("/api/stock/{ticker}/chart")
-def get_stock_chart(ticker: str):
+def get_stock_chart(ticker: str, username: str = Depends(auth.require_login)):
     ticker = ticker.upper()
     if not ticker.endswith(".NS"):
         ticker = ticker + ".NS"

@@ -33,6 +33,26 @@ advice.
 
 Command palette: `⌘K` or `/` anywhere on the site.
 
+## Signing in
+
+The site sits behind a simple login (`app/auth.py`) — not a real multi-user
+system (there's no per-user data; watchlist/journal live in each visitor's
+own browser), just enough to keep the public URL from being wide open.
+
+- **Demo account** — `demo` / `demo1234`. Meant to be public; shown right on
+  the login page, with a "Continue as demo" button.
+- **Your own login** — set `SWINGLAB_USERNAME` and `SWINGLAB_PASSWORD` as
+  environment variables (Render → your service → **Environment**, not in
+  `render.yaml`, since that file is in this public repo). Without them, the
+  app generates a random password at startup and prints it once to the
+  server's own logs (Render → **Logs**) — safe, but you'll need to check the
+  logs again after every restart. Setting the env vars gives you a stable
+  login.
+- Also set `SWINGLAB_SECRET_KEY` (any long random string) so login sessions
+  survive a restart/redeploy instead of everyone being signed out. Without
+  it, a random key is generated per-process — secure, just less convenient
+  on Render's free tier, which restarts often.
+
 ## Is the data live?
 
 - **Any company you search**: fetched and scored from Yahoo (price) and
