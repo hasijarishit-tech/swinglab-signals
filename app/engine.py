@@ -10,6 +10,8 @@ Output schema matches the pre-computed lookup_bundle.json entries exactly
 from __future__ import annotations
 
 import json
+import threading
+import time
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +33,70 @@ _context = json.loads((DATA_DIR / "universe_context.json").read_text())
 
 class TickerNotFound(Exception):
     pass
+
+
+# A single company page fires 3 independent requests (verdict, chart,
+# fundamentals) within about a second of each other. Without this, each one
+# separately re-fetches the same ticker's price history from Yahoo, and the
+# verdict + chart endpoints each separately re-run the same Strategy 1
+# backtest — 3x the Yahoo round-trips and 2x the backtest for one page view,
+# which is most of why the live site felt slow. Short TTL, not correctness-
+# critical: it only ever reuses data that's at most ~2 minutes old within a
+# single live analysis, well inside the "live" claim made elsewhere.
+_CACHE_TTL_SECONDS = 120
+_cache_lock = threading.Lock()
+_cache: dict[str, tuple[float, object]] = {}
+
+
+def _cached(key: str, compute):
+    now = time.time()
+    with _cache_lock:
+        hit = _cache.get(key)
+        if hit is not None and now - hit[0] < _CACHE_TTL_SECONDS:
+            return hit[1]
+    value = compute()
+    with _cache_lock:
+        _cache[key] = (now, value)
+    return value
+
+
+def _get_price_events(ticker: str):
+    """Cached (ohlcv, dividends, splits) for `ticker` — the one Yahoo fetch
+    every live code path needs, deduplicated across the 3 endpoints a
+    single company-page view calls."""
+    def compute():
+        try:
+            return fetch_ohlcv_with_events(ticker, START, END)
+        except DataFetchError as e:
+            return e
+    result = _cached(f"ohlcv:{ticker}", compute)
+    if isinstance(result, DataFetchError):
+        raise TickerNotFound(str(result))
+    return result
+
+
+def _get_fundamentals_html(symbol: str):
+    """Cached screener.in page fetch — screener.in fetch_company_page
+    already caches to disk, but that only helps *sequential* requests; two
+    endpoints hitting the same never-before-seen ticker at the same instant
+    would otherwise both fetch over the network before either finishes
+    writing the disk cache."""
+    return _cached(f"fundhtml:{symbol}", lambda: fetch_company_page(symbol, cache_dir=str(DATA_DIR / ".fundamentals_cache")))
+
+
+def _get_s1_backtest(ticker: str, signal_close: pd.Series, dividend: pd.Series, sma_period: int):
+    """Cached Strategy-1 single-stock backtest — needed by both the verdict
+    endpoint (for the trade log) and the chart endpoint (for buy/sell
+    markers). Returns None if there isn't enough history for the SMA yet."""
+    def compute():
+        sma = signal_close.rolling(sma_period, min_periods=sma_period).mean()
+        if len(signal_close) <= 1 or not sma.notna().any():
+            return None
+        close_panel = signal_close.to_frame(name=ticker)
+        div_panel = dividend.to_frame(name=ticker)
+        w1 = ma_trend.compute_target_weights(close_panel, sma_period=sma_period)
+        return PortfolioEngine(100_000.0).run(close_panel, w1, div_panel)
+    return _cached(f"s1bt:{ticker}:{sma_period}", compute)
 
 
 def _trades_from_result(result) -> tuple[list[dict], dict]:
@@ -63,10 +129,7 @@ def analyze_ticker(ticker: str) -> dict:
     if not ticker.endswith(".NS"):
         ticker = ticker + ".NS"
 
-    try:
-        ohlcv, dividends, splits = fetch_ohlcv_with_events(ticker, START, END)
-    except DataFetchError as e:
-        raise TickerNotFound(str(e))
+    ohlcv, dividends, splits = _get_price_events(ticker)
 
     signal_close = split_adjusted_close(ohlcv["Close"], splits)
     dividend = align_dividends(dividends, ohlcv.index)
@@ -79,17 +142,14 @@ def analyze_ticker(ticker: str) -> dict:
     # ---------------- S1: MA Trend — real single-stock backtest ----------------
     sma_period = int(CHOSEN["S1"]["sma_period"])
     sma_val = signal_close.rolling(sma_period, min_periods=sma_period).mean().iloc[-1]
-    close_panel = signal_close.to_frame(name=ticker)
-    div_panel = dividend.to_frame(name=ticker)
-    if pd.isna(sma_val):
+    r1 = _get_s1_backtest(ticker, signal_close, dividend, sma_period)
+    if pd.isna(sma_val) or r1 is None:
         out["S1"] = {
             "held_now": False, "rule_qualifies_now": None, "pct_vs_sma": None,
             "note": f"not enough price history yet (needs {sma_period} trading days, has {len(signal_close)})",
             "trades": [], "stats": {"num_trades": 0, "win_rate_pct": None, "avg_pnl_pct": None, "avg_hold_days": None},
         }
     else:
-        w1 = ma_trend.compute_target_weights(close_panel, sma_period=sma_period)
-        r1 = PortfolioEngine(100_000.0).run(close_panel, w1, div_panel)
         trades1, stats1 = _trades_from_result(r1)
         qualifies = last_price > sma_val
         out["S1"] = {
@@ -141,7 +201,7 @@ def analyze_ticker(ticker: str) -> dict:
 
     # ---------------- S3 & S5: fundamentals-based ----------------
     symbol = ticker.replace(".NS", "")
-    html = fetch_company_page(symbol, cache_dir=str(DATA_DIR / ".fundamentals_cache"))
+    html = _get_fundamentals_html(symbol)
     hist = parse_fundamentals(html, symbol) if html else None
     fr = ratios_asof(hist, last_date, last_price) if hist else None
 
@@ -208,10 +268,7 @@ def price_chart(ticker: str, max_points: int = 400) -> dict:
     if not ticker.endswith(".NS"):
         ticker = ticker + ".NS"
 
-    try:
-        ohlcv, dividends, splits = fetch_ohlcv_with_events(ticker, START, END)
-    except DataFetchError as e:
-        raise TickerNotFound(str(e))
+    ohlcv, dividends, splits = _get_price_events(ticker)
 
     signal_close = split_adjusted_close(ohlcv["Close"], splits)
     dividend = align_dividends(dividends, ohlcv.index)
@@ -226,11 +283,8 @@ def price_chart(ticker: str, max_points: int = 400) -> dict:
         sample_pos.append(n - 1)
 
     trades: list[dict] = []
-    if n > 1 and sma.notna().any():
-        close_panel = signal_close.to_frame(name=ticker)
-        div_panel = dividend.to_frame(name=ticker)
-        w1 = ma_trend.compute_target_weights(close_panel, sma_period=sma_period)
-        r1 = PortfolioEngine(100_000.0).run(close_panel, w1, div_panel)
+    r1 = _get_s1_backtest(ticker, signal_close, dividend, sma_period)
+    if r1 is not None:
         for p in r1.closed_positions:
             entry_pos = date_index.get_indexer([p.entry_date], method="nearest")[0]
             exit_pos = date_index.get_indexer([p.exit_date], method="nearest")[0]
@@ -287,7 +341,7 @@ def fundamentals_detail(ticker: str) -> dict:
         ticker = ticker + ".NS"
     symbol = ticker.replace(".NS", "")
 
-    html = fetch_company_page(symbol, cache_dir=str(DATA_DIR / ".fundamentals_cache"))
+    html = _get_fundamentals_html(symbol)
     if not html:
         return {"ticker": ticker, "available": False,
                 "reason": "No public screener.in page found for this symbol."}
@@ -324,7 +378,7 @@ def fundamentals_detail(ticker: str) -> dict:
     last_price, last_date, current_ratios = None, None, None
     dividends = pd.Series(dtype=float)
     try:
-        ohlcv, dividends, splits = fetch_ohlcv_with_events(ticker, START, END)
+        ohlcv, dividends, splits = _get_price_events(ticker)
         signal_close = split_adjusted_close(ohlcv["Close"], splits)
         last_price = float(signal_close.iloc[-1])
         last_date = signal_close.index[-1]
@@ -341,7 +395,7 @@ def fundamentals_detail(ticker: str) -> dict:
             price_then = float(price_naive.iloc[pos])
             pe_history.append({"period_end": str(d.date()), "pe": round(price_then / e, 1)})
         current_ratios = ratios_asof(hist, last_date, last_price)
-    except DataFetchError:
+    except TickerNotFound:
         pass
 
     pe_vals_universe = list(_context.get("s3_pe", {}).values())

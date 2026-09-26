@@ -314,16 +314,28 @@
       META = await r.json();
       NAMES = META.names || {};
     }catch(e){ META = {strategy_meta:{}, as_of:'—'}; }
-    refreshMarketPill();
+    await refreshMarketPill();
     router();
+  }
+
+  // one in-flight request shared by the nav pill, the home page, and the
+  // journal — otherwise a cold cache on the backend gets hit by 2-3
+  // concurrent requests instead of one.
+  let _marketPromise = null;
+  async function getMarket(forceRefresh){
+    if (!forceRefresh && MARKET) return MARKET;
+    if (!_marketPromise){
+      _marketPromise = fetch(`${API}/api/market`).then(r => r.json())
+        .then(m => { MARKET = m; _marketPromise = null; return m; })
+        .catch(e => { _marketPromise = null; throw e; });
+    }
+    return _marketPromise;
   }
 
   async function refreshMarketPill(){
     try{
-      const r = await fetch(`${API}/api/market`);
-      MARKET = await r.json();
-      const v = MARKET.vix;
-      const n = MARKET.nifty50;
+      const m = await getMarket(true);
+      const v = m.vix, n = m.nifty50;
       const pillEl = document.getElementById('market-pill');
       if (n && v){
         const lit = n.chg_pct >= 0 ? 'var(--pos)' : 'var(--neg)';
@@ -521,9 +533,7 @@
     wireSearchBox(document.getElementById('home-search-input'), document.getElementById('home-suggestions'));
 
     try{
-      const r = await fetch(`${API}/api/market`);
-      const m = await r.json();
-      MARKET = m;
+      const m = await getMarket();
       document.getElementById('mkt-cards').innerHTML =
         mktCard('NIFTY 50', m.nifty50) + mktCard('NIFTY MIDCAP 50', m.midcap) + mktCard('INDIA VIX', m.vix) + breadthCard(m.breadth);
       const b = m.breadth;
@@ -1152,7 +1162,7 @@
     document.getElementById('j-add-co').addEventListener('keydown', e => { if (e.key==='Enter') addReviewed(entry); });
 
     try{
-      const m = MARKET || await (await fetch(`${API}/api/market`)).json();
+      const m = await getMarket();
       const b = m.breadth;
       document.getElementById('j-market').innerHTML = `NIFTY 50 ${m.nifty50?fmtNum(m.nifty50.level,0)+' ('+fmtPct(m.nifty50.chg_pct)+')':'—'} ·
         Regime: ${m.nifty50?m.nifty50.regime:'—'} · VIX ${m.vix?m.vix.level.toFixed(1):'—'} (${m.vix?m.vix.regime:'—'}) ·

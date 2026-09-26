@@ -8,6 +8,7 @@ Deployed with: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 from __future__ import annotations
 
 import json
+import threading
 import time
 from pathlib import Path
 
@@ -33,6 +34,7 @@ _names: dict[str, str] = {}
 _meta: dict = {}
 _strategy_lab = json.loads((DATA_DIR / "strategy_lab.json").read_text()) if (DATA_DIR / "strategy_lab.json").exists() else None
 _market_cache: dict = {"data": None, "ts": 0.0}
+_market_lock = threading.Lock()
 MARKET_CACHE_TTL_SECONDS = 300
 
 
@@ -98,8 +100,11 @@ def get_stock(ticker: str):
 def market():
     now = time.time()
     if _market_cache["data"] is None or now - _market_cache["ts"] > MARKET_CACHE_TTL_SECONDS:
-        _market_cache["data"] = get_market_snapshot()
-        _market_cache["ts"] = now
+        with _market_lock:
+            # re-check: another thread may have refreshed it while we waited for the lock
+            if _market_cache["data"] is None or time.time() - _market_cache["ts"] > MARKET_CACHE_TTL_SECONDS:
+                _market_cache["data"] = get_market_snapshot()
+                _market_cache["ts"] = time.time()
     return _market_cache["data"]
 
 
@@ -117,6 +122,8 @@ def get_fundamentals(ticker: str):
         ticker = ticker + ".NS"
     try:
         return fundamentals_detail(ticker)
+    except TickerNotFound:
+        raise HTTPException(status_code=404, detail=f"No price data found for {ticker}.")
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Couldn't load fundamentals for {ticker} right now: {e}")
 
