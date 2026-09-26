@@ -8,6 +8,7 @@ Deployed with: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -16,7 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from . import db
-from .engine import TickerNotFound, analyze_ticker, price_chart
+from .engine import TickerNotFound, analyze_ticker, price_chart, fundamentals_detail
+from .market import get_market_snapshot
 
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -29,6 +31,9 @@ app.add_middleware(
 
 _names: dict[str, str] = {}
 _meta: dict = {}
+_strategy_lab = json.loads((DATA_DIR / "strategy_lab.json").read_text()) if (DATA_DIR / "strategy_lab.json").exists() else None
+_market_cache: dict = {"data": None, "ts": 0.0}
+MARKET_CACHE_TTL_SECONDS = 300
 
 
 @app.on_event("startup")
@@ -87,6 +92,33 @@ def get_stock(ticker: str):
     result["name"] = _names.get(ticker, ticker.replace(".NS", ""))
     db.set_cached(ticker, result, is_live=True)
     return result
+
+
+@app.get("/api/market")
+def market():
+    now = time.time()
+    if _market_cache["data"] is None or now - _market_cache["ts"] > MARKET_CACHE_TTL_SECONDS:
+        _market_cache["data"] = get_market_snapshot()
+        _market_cache["ts"] = now
+    return _market_cache["data"]
+
+
+@app.get("/api/strategy-lab")
+def strategy_lab():
+    if _strategy_lab is None:
+        raise HTTPException(status_code=404, detail="Strategy lab data not available.")
+    return _strategy_lab
+
+
+@app.get("/api/stock/{ticker}/fundamentals")
+def get_fundamentals(ticker: str):
+    ticker = ticker.upper()
+    if not ticker.endswith(".NS"):
+        ticker = ticker + ".NS"
+    try:
+        return fundamentals_detail(ticker)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Couldn't load fundamentals for {ticker} right now: {e}")
 
 
 @app.get("/api/stock/{ticker}/chart")

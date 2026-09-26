@@ -1,11 +1,50 @@
-# SwingLab Signals
+# SwingLab — Personal Investing Research Lab
 
-Type any NSE stock, see what 5 backtested trading strategies currently say
-about it. 500 stocks answer instantly (pre-computed); anything else gets
-fetched and analyzed live, right on the page — no need to ask anyone to
-add it.
+A systematic framework for studying Indian equities: fundamentals, valuation,
+momentum, quality, market context and risk, for any NSE company — not just
+the 500 that are pre-computed. Personal research project, not investment
+advice.
 
-## Run it on your own computer first
+## Pages
+
+- **Home** — live Nifty 50 / Nifty Midcap 50 / India VIX snapshot, market
+  breadth, and a "Today's Research Desk" (momentum leaders/laggards) —
+  research categories, not buy/sell calls.
+- **Company Research Terminal** (`#/company/TICKER`) — the centerpiece.
+  An independent-dimension snapshot matrix (quality, valuation, growth,
+  momentum, profitability, balance sheet, cash flow, market trend, risk —
+  no single "buy score"), a live log-scale price chart with the strategy
+  engine's real buy/sell markers, full fundamental history with charts and
+  data-supported observations, a valuation panel (current P/E/P/B/EV-EBITDA
+  vs. the company's own 5-year median and the Nifty 500 median), the 5
+  existing technical strategies (renamed: Long-Term Trend, Momentum, Value,
+  Price Strength, Quality), and a personal investment-thesis canvas saved
+  in your browser. A **Long Term / Swing** toggle reorders the page to
+  emphasize fundamentals or technicals.
+- **Strategy Lab** — the full comparison table (CAGR, vol, Sharpe, Sortino,
+  max drawdown, Calmar, win rate, turnover) plus interactive growth-of-₹1,
+  drawdown, rolling-Sharpe and calendar-year-return charts, all from the
+  original Nifty 500 backtest.
+- **Watchlist**, **Daily Research Journal** — saved in your browser
+  (`localStorage`), no account needed.
+- **Investing Journey**, **Methodology** — the story so far, and a fully
+  transparent writeup of data sources, point-in-time discipline, and every
+  known limitation.
+
+Command palette: `⌘K` or `/` anywhere on the site.
+
+## Is the data live?
+
+- **Any company you search**: fetched and scored from Yahoo (price) and
+  screener.in (fundamentals) at the moment you ask.
+- **Everything, including the 500 pre-built companies**: a cached result
+  is only reused while less than 4 days old (`app/db.py`) — past that, the
+  next request re-analyzes it live. Nothing shown is ever more than a few
+  days old.
+- **The price chart and the market snapshot**: always live, every time,
+  no cache.
+
+## Run it on your own computer
 
 ```bash
 python3 -m venv .venv
@@ -14,98 +53,66 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000 — that's the whole app, frontend and backend
-together. Try a big name (instant) and a small/recent one (a few seconds).
+Open http://127.0.0.1:8000.
 
-## Put it on the internet (so it works from your phone, anywhere)
+## Deploying it
 
-This needs two accounts that only you can create — I can't sign up for
-services on your behalf. Both are free.
+Currently deployed on **Render's free tier**: https://swinglab-signals.onrender.com
 
-**Step 1 — GitHub** (if you don't already have an account: github.com → Sign up)
-1. Create a new repository (github.com → the `+` in the top right → New repository). Any name, e.g. `swinglab-signals`.
-2. Push this folder to it:
-   ```bash
-   cd swinglab-signals-app
-   git init
-   git add .
-   git commit -m "SwingLab Signals"
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/swinglab-signals.git
-   git push -u origin main
-   ```
+Render's free plan sleeps after ~15 minutes idle (a visit after that takes
+~30-60s to wake up) and has no persistent disk, so the on-demand cache
+resets on every restart — the 500 pre-built companies always come back
+(they reload from `data/lookup_bundle.json`), a freshly-searched one
+doesn't.
 
-**Step 2 — Render** (render.com → Sign up, the free tier is enough)
-1. Dashboard → **New** → **Blueprint**.
-2. Connect your GitHub account, pick the repo you just pushed.
-3. Render reads `render.yaml` in this folder automatically and sets
-   everything up — just click **Apply**.
-4. Wait ~2-3 minutes for the first build. You'll get a URL like
-   `https://swinglab-signals.onrender.com` — that's it, live.
+**For everyday, always-on use**, two realistic upgrades from here:
+- **Render's paid tier** (~$7/month) — no sleep, add a persistent disk with
+  a one-line change to `render.yaml` (`disk: {name: data, mountPath:
+  /opt/render/project/src/data, sizeGB: 1}`). Same repo, same deploy flow.
+- **Fly.io or Railway** — similar free-tier sleep behavior to Render;
+  their paid tiers are comparable in price. Not a meaningfully different
+  trade-off from staying on Render's paid tier.
 
-Every time you `git push` again, Render redeploys automatically.
-
-## Is the data live?
-
-- **Any stock you search that isn't pre-built**: yes — fetched and scored
-  from Yahoo (price) and screener.in (fundamentals) at the moment you ask.
-- **Everything, including the 500 pre-built stocks**: a cached result is
-  reused only while it's less than 4 days old (`app/db.py`, `MAX_AGE_DAYS`)
-  — old enough to survive a weekend, not old enough to go stale. Past
-  that, the next request re-analyzes it live and re-caches the fresh
-  result. So nothing shown is ever more than a few days old.
-- **The price chart on each stock's page**: always live, every time, no
-  cache — it's a cheap fetch (price only, no fundamentals), so there was
-  no reason to let it go stale.
-
-## The one real limitation to know about
-
-Render's **free tier** doesn't keep a persistent disk — the small database
-that caches stocks you've looked up gets wiped whenever the free instance
-restarts (which happens after ~15 minutes of no traffic, and on every
-redeploy). In practice this means:
-- The 500 pre-built stocks reload from `data/lookup_bundle.json` on every
-  startup, so they're always there — just possibly due for their own
-  4-day refresh sooner after a restart.
-- A stock you fetched live stays cached *for a while*, then eventually
-  needs re-fetching (still just a few seconds) after the instance sleeps
-  or the 4-day window passes, whichever comes first.
-
-If you want live-fetched stocks to stay cached forever, Render's paid tier
-(~$7/month) adds a persistent disk — a one-line change to `render.yaml`
-(`disk: { name: data, mountPath: /opt/render/project/src/data, sizeGB: 1 }`).
-Not necessary to get started.
+Redeploy by pushing to `main` — Render rebuilds automatically.
 
 ## What's actually in here
 
 ```
 app/
-  main.py         FastAPI app — the endpoints the frontend calls
-  engine.py       fetches + scores ONE stock live (Yahoo + screener.in),
-                  and builds its price chart
-  db.py           tiny SQLite cache, with a 4-day freshness check
-  swinglab/       the backtesting engine itself (price data, fundamentals,
-                  the trend-following strategy, portfolio simulation)
+  main.py          FastAPI app — all endpoints
+  engine.py         fetches + scores ONE stock live, builds its price
+                     chart and full fundamentals/valuation history
+  market.py          live Nifty/VIX snapshot + universe breadth
+  db.py               SQLite cache, 4-day freshness check
+  swinglab/            the backtesting engine (price data, fundamentals
+                        scraping, the trend strategy, portfolio simulation)
 data/
-  lookup_bundle.json     the 500 pre-computed stocks
-  universe_context.json  ranking data a new stock gets compared against
-  verdicts.json           which parameters each strategy uses
+  lookup_bundle.json      the 500 pre-computed companies
+  universe_context.json    ranking data a new company is compared against
+  verdicts.json              which parameters each strategy uses
+  strategy_lab.json           the Strategy Lab's comparison table + charts
 static/
-  index.html      the whole frontend — one file, no build step
-  charts/         6 PNGs from the original Nifty 500 backtest (growth of
-                  ₹1, drawdown, rolling Sharpe/CAGR, annual returns,
-                  turnover) — how the 5 strategies compared overall,
-                  shown below the per-stock search
+  index.html          the entire frontend — one file, hash-routed, no
+                       build step
+  charts/              legacy static PNGs (turnover chart; the rest have
+                       interactive replacements in Strategy Lab)
 ```
 
-## Known scope limits, stated plainly
+## Known limitations, stated plainly
 
-- Live analysis only computes **today's signal** for Strategies 2-5, not a
-  full historical trade log for that specific stock (that needs re-ranking
-  the whole 500-stock universe on every historical date, which is too slow
-  to do on a live request). Strategy 1 *does* get a real, full backtest
-  live, since that one only needs the stock's own price history.
-- Fundamentals (Strategies 3 & 5) come from screener.in's public pages —
-  free, but not an official API. If their page layout changes, that part
-  can break; price data (Yahoo) is more stable.
-- This is a research tool. Nothing here is investment advice.
+- Live analysis for a company outside the pre-built 500 only computes
+  *today's* signal for Strategies 2–5, not a full historical trade log for
+  that specific company (needs re-ranking the whole universe on every past
+  date — too slow to do live).
+- Fundamentals history runs to about 12 years (FY2015+), shorter than the
+  16-year price history.
+- Historical P/E divides today's split-adjusted price convention against
+  each year's *as-reported* EPS — for a company with a stock split partway
+  through its history, older P/E figures can be skewed. See Methodology.
+- Banks/NBFCs are excluded from fundamentals entirely (different statement
+  format — Revenue/Financing-Profit instead of Sales/EBITDA).
+- "Sector median" valuation isn't implemented — the Nifty 500 universe
+  median is shown instead, labeled as such.
+- No portfolio-level correlation/exposure analysis yet (a "Portfolio Lab").
+  Watchlist + per-company research cover the gap for now.
+- Everything on this site is a research output, not investment advice.

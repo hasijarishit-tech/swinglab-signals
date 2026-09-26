@@ -109,13 +109,16 @@ def _row_series(table: pd.DataFrame, label_contains: str) -> pd.Series:
 class FundamentalsHistory:
     symbol: str
     eps: pd.Series               # Rs per share, annual EPS
+    revenue: pd.Series           # Rs Cr, "Sales"
     net_profit: pd.Series        # Rs Cr
     operating_profit: pd.Series  # Rs Cr, ~= EBITDA
+    interest: pd.Series          # Rs Cr, P&L "Interest" expense
     equity_capital: pd.Series    # Rs Cr
     reserves: pd.Series          # Rs Cr
     borrowings: pd.Series        # Rs Cr
     roce_pct: pd.Series          # screener's own figure, not recomputed
     free_cash_flow: pd.Series    # Rs Cr, screener's own figure
+    operating_cash_flow: pd.Series  # Rs Cr, screener's own figure
 
     @property
     def dates(self) -> list[pd.Timestamp]:
@@ -175,13 +178,16 @@ def parse_fundamentals(html: str, symbol: str) -> FundamentalsHistory | None:
     return FundamentalsHistory(
         symbol=symbol,
         eps=_row_series(pl, "EPS in Rs"),
+        revenue=_row_series(pl, "Sales"),
         net_profit=_row_series(pl, "Net Profit"),
         operating_profit=_row_series(pl, "Operating Profit"),
+        interest=_row_series(pl, "Interest"),
         equity_capital=_row_series(bs, "Equity Capital"),
         reserves=_row_series(bs, "Reserves"),
         borrowings=_row_series(bs, "Borrowings"),
         roce_pct=_row_series(ratios, "ROCE") if ratios is not None else pd.Series(dtype=float),
         free_cash_flow=_row_series(cf, "Free Cash Flow") if cf is not None else pd.Series(dtype=float),
+        operating_cash_flow=_row_series(cf, "Cash from Operating Activity") if cf is not None else pd.Series(dtype=float),
     )
 
 

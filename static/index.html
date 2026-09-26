@@ -1,11 +1,11 @@
-<title>SwingLab Signals</title>
+<title>SwingLab — Research Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#1B2129; --ink-soft:#4B5563; --muted:#838B92;
-    --bg:#EEECE3; --surface:#FBFAF6; --surface-2:#F4F1E9; --border:#DAD5C8;
+    --bg:#EEECE3; --surface:#FBFAF6; --surface-2:#F4F1E9; --surface-3:#EAE6D9; --border:#DAD5C8;
     --neg:#BE4A38; --pos:#0E9A73; --accent:#B8791E; --accent-text:#8C5B14;
     --s1:#2a78d6; --s2:#c85a1e; --s3:#12946f; --s4:#9c7a00; --s5:#c04c78;
     --shadow: 0 1px 2px rgba(27,33,41,0.06), 0 8px 24px -12px rgba(27,33,41,0.15);
@@ -15,215 +15,326 @@
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --ink:#EDEDE7; --ink-soft:#B7BCC1; --muted:#82898F;
-      --bg:#14171A; --surface:#1B1F23; --surface-2:#20252A; --border:#2B3136;
-      --neg:#D9614B; --pos:#1FA87E; --accent:#C08528; --accent-text:#E3A63D;
+      --ink:#E9E7DF; --ink-soft:#B3AEA0; --muted:#78746A;
+      --bg:#0B0C0D; --surface:#131415; --surface-2:#18191A; --surface-3:#1E2021; --border:#26282A;
+      --neg:#E0705C; --pos:#2CBB8E; --accent:#D19A3D; --accent-text:#E3B15C;
       --s1:#5b9de6; --s2:#e0824c; --s3:#2fbd93; --s4:#d4a92e; --s5:#e087a8;
-      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.6);
     }
   }
   :root[data-theme="dark"]{
-    --ink:#EDEDE7; --ink-soft:#B7BCC1; --muted:#82898F;
-    --bg:#14171A; --surface:#1B1F23; --surface-2:#20252A; --border:#2B3136;
-    --neg:#D9614B; --pos:#1FA87E; --accent:#C08528; --accent-text:#E3A63D;
+    --ink:#E9E7DF; --ink-soft:#B3AEA0; --muted:#78746A;
+    --bg:#0B0C0D; --surface:#131415; --surface-2:#18191A; --surface-3:#1E2021; --border:#26282A;
+    --neg:#E0705C; --pos:#2CBB8E; --accent:#D19A3D; --accent-text:#E3B15C;
     --s1:#5b9de6; --s2:#e0824c; --s3:#2fbd93; --s4:#d4a92e; --s5:#e087a8;
-    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.6);
   }
 
   *{box-sizing:border-box;}
-  body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased; }
-  ::selection{ background:var(--accent); color:var(--surface); }
+  html{ color-scheme:light dark; }
+  body{ margin:0; background:
+    radial-gradient(1200px 500px at 50% -10%, color-mix(in srgb, var(--accent) 5%, transparent), transparent),
+    var(--bg);
+    color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  ::selection{ background:var(--accent); color:var(--bg); }
   p{ margin:0; }
-  .wrap{ max-width:760px; margin:0 auto; padding:0 22px 90px; }
-  h1,h2{ font-family:var(--serif); font-weight:600; margin:0; text-wrap:balance; }
+  a{ color:inherit; }
+  h1,h2,h3{ font-family:var(--serif); font-weight:600; margin:0; text-wrap:balance; }
   .num{ font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  .wrap{ max-width:960px; margin:0 auto; padding:0 20px 100px; }
+  [hidden]{ display:none !important; }
+  button{ font-family:inherit; }
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:20px; }
 
-  header.top{ padding:34px 0 26px; text-align:center; }
-  .wordmark{ font-family:var(--serif); font-weight:600; font-size:15px; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:7px; }
-  header.top h1{ font-size:clamp(24px,4.5vw,32px); margin-top:12px; }
-  header.top .sub{ margin-top:8px; color:var(--ink-soft); font-size:14.5px; max-width:52ch; margin-left:auto; margin-right:auto; }
+  /* ============ top nav ============ */
+  .topnav{ position:sticky; top:0; z-index:40; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); }
+  .topnav-in{ max-width:1080px; margin:0 auto; padding:0 20px; display:flex; align-items:center; gap:18px; height:54px; }
+  .brand{ font-family:var(--serif); font-weight:700; font-size:15.5px; letter-spacing:.01em; display:flex; align-items:center; gap:7px; white-space:nowrap; cursor:pointer; }
+  .brand .dot{ width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  nav.mainlinks{ display:flex; gap:2px; flex:1; overflow-x:auto; scrollbar-width:none; }
+  nav.mainlinks::-webkit-scrollbar{ display:none; }
+  nav.mainlinks a{ font-size:12.5px; font-family:var(--mono); color:var(--muted); text-decoration:none; padding:7px 11px; border-radius:7px; white-space:nowrap; transition:color .12s,background .12s; }
+  nav.mainlinks a:hover{ color:var(--ink); background:var(--surface-2); }
+  nav.mainlinks a.active{ color:var(--ink); background:var(--surface-2); }
+  .nav-right{ display:flex; align-items:center; gap:10px; margin-left:auto; }
+  .searchbtn{ display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--muted); font-size:12px; font-family:var(--mono); cursor:pointer; }
+  .searchbtn kbd{ font-family:var(--mono); background:var(--surface-2); border:1px solid var(--border); border-radius:4px; padding:0px 5px; font-size:10.5px; }
+  .marketpill{ display:none; align-items:center; gap:6px; font-family:var(--mono); font-size:11.5px; padding:5px 10px; border-radius:100px; border:1px solid var(--border); background:var(--surface); color:var(--ink-soft); }
+  @media(min-width:760px){ .marketpill{ display:flex; } }
+  .marketpill .lit{ width:6px; height:6px; border-radius:50%; }
 
-  /* ---------- search ---------- */
-  .search-box{ position:relative; margin:26px auto 0; max-width:520px; }
-  .search-box input{
-    width:100%; font-family:var(--mono); font-size:15px; padding:15px 18px;
-    border:1.5px solid var(--border); border-radius:12px; background:var(--surface);
-    color:var(--ink); outline:none; transition:border-color .15s ease;
-  }
-  .search-box input:focus{ border-color:var(--accent); }
-  .search-box input::placeholder{ color:var(--muted); }
-  .suggestions{
-    position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--surface);
-    border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow);
-    max-height:280px; overflow-y:auto; z-index:30; display:none;
-  }
+  /* ============ command palette ============ */
+  .cmdk-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100; display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; }
+  .cmdk{ width:min(560px,92vw); background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:0 30px 80px -20px rgba(0,0,0,.5); overflow:hidden; }
+  .cmdk input{ width:100%; border:none; outline:none; background:transparent; padding:16px 18px; font-family:var(--mono); font-size:14.5px; color:var(--ink); border-bottom:1px solid var(--border); }
+  .cmdk input::placeholder{ color:var(--muted); }
+  .cmdk-list{ max-height:340px; overflow-y:auto; padding:6px; }
+  .cmdk-item{ display:flex; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:13.5px; }
+  .cmdk-item:hover, .cmdk-item.sel{ background:var(--surface-2); }
+  .cmdk-item .k{ font-family:var(--mono); font-size:10.5px; color:var(--muted); }
+
+  /* ============ generic layout bits ============ */
+  .eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); }
+  .section{ margin-top:52px; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+  .section-head h2{ font-size:19px; }
+  .section-head .hint{ font-size:12.5px; color:var(--muted); }
+  .grid{ display:grid; gap:12px; }
+  .grid.cols-2{ grid-template-columns:1fr; } @media(min-width:640px){ .grid.cols-2{ grid-template-columns:1fr 1fr; } }
+  .grid.cols-3{ grid-template-columns:1fr; } @media(min-width:640px){ .grid.cols-3{ grid-template-columns:repeat(2,1fr); } } @media(min-width:900px){ .grid.cols-3{ grid-template-columns:repeat(3,1fr); } }
+  .grid.cols-4{ grid-template-columns:repeat(2,1fr); } @media(min-width:760px){ .grid.cols-4{ grid-template-columns:repeat(4,1fr); } }
+  .panel{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .panel.pad-lg{ padding:22px 24px; }
+  .chip{ font-family:var(--mono); font-size:10.5px; letter-spacing:.03em; padding:3px 9px; border-radius:100px; border:1px solid var(--border); color:var(--muted); background:var(--surface-2); }
+  .chip.good{ color:var(--pos); border-color:color-mix(in srgb, var(--pos) 35%, var(--border)); background:color-mix(in srgb, var(--pos) 12%, var(--surface)); }
+  .chip.warn{ color:var(--accent-text); border-color:color-mix(in srgb, var(--accent) 35%, var(--border)); background:color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  .chip.bad{ color:var(--neg); border-color:color-mix(in srgb, var(--neg) 35%, var(--border)); background:color-mix(in srgb, var(--neg) 12%, var(--surface)); }
+  .skeleton{ text-align:center; padding:60px 0; color:var(--muted); font-family:var(--mono); font-size:12.5px; }
+  .empty-note{ font-size:12.5px; color:var(--muted); font-style:italic; }
+  .btn{ font-family:var(--mono); font-size:12px; padding:7px 13px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--ink); cursor:pointer; }
+  .btn:hover{ background:var(--surface-2); }
+  .btn.primary{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  :root[data-theme="dark"] .btn.primary, :root:not([data-theme="light"]) .btn.primary{ }
+  @media(prefers-color-scheme:dark){ :root:not([data-theme="light"]) .btn.primary{ background:var(--accent); border-color:var(--accent); color:#171208; } }
+  :root[data-theme="dark"] .btn.primary{ background:var(--accent); border-color:var(--accent); color:#171208; }
+
+  /* ============ home ============ */
+  .hero{ padding:56px 0 18px; text-align:center; }
+  .hero .eyebrow{ margin-bottom:14px; }
+  .hero h1{ font-size:clamp(34px,7vw,54px); line-height:1.05; }
+  .hero .sub{ margin:16px auto 0; max-width:58ch; color:var(--ink-soft); font-size:15.5px; line-height:1.6; }
+  .hero .disclaimer-line{ margin-top:14px; font-size:11.5px; color:var(--muted); font-family:var(--mono); }
+  .home-search{ max-width:560px; margin:30px auto 0; position:relative; }
+  .home-search input{ width:100%; font-family:var(--mono); font-size:15px; padding:16px 20px; border:1.5px solid var(--border); border-radius:12px; background:var(--surface); color:var(--ink); outline:none; }
+  .home-search input:focus{ border-color:var(--accent); }
+  .suggestions{ position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); max-height:280px; overflow-y:auto; z-index:30; display:none; text-align:left; }
   .suggestions.open{ display:block; }
   .suggestions .row{ padding:10px 16px; cursor:pointer; display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
-  .suggestions .row:hover, .suggestions .row.active{ background:var(--surface-2); }
+  .suggestions .row:hover{ background:var(--surface-2); }
   .suggestions .row .tkr{ font-family:var(--mono); font-weight:600; font-size:13px; }
-  .suggestions .row .cname{ font-size:12.5px; color:var(--muted); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .search-hint{ text-align:center; font-size:12px; color:var(--muted); margin-top:10px; font-family:var(--mono); }
+  .suggestions .row .cname{ font-size:12px; color:var(--muted); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-  .not-found{ margin:28px auto 0; max-width:560px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:20px 22px; text-align:center; }
-  .not-found p{ font-size:14px; color:var(--ink-soft); line-height:1.6; }
-  .not-found .ticker-tried{ font-family:var(--mono); font-weight:600; color:var(--ink); }
-  [hidden]{ display:none !important; }
+  .mkt-card{ padding:16px 18px; }
+  .mkt-card .lbl{ font-family:var(--mono); font-size:11px; letter-spacing:.05em; color:var(--muted); }
+  .mkt-card .lvl{ font-family:var(--mono); font-size:23px; font-weight:600; margin-top:6px; }
+  .mkt-card .chg{ font-family:var(--mono); font-size:12.5px; margin-top:3px; }
+  .mkt-card .regime{ margin-top:10px; }
+  .mkt-card .asof{ margin-top:8px; font-size:10.5px; color:var(--muted); font-family:var(--mono); }
 
-  /* ---------- results ---------- */
-  #results{ margin-top:36px; }
-  .stock-head{ text-align:center; }
-  .stock-head .name{ font-family:var(--serif); font-size:22px; font-weight:600; }
-  .stock-head .tkr{ font-family:var(--mono); color:var(--muted); font-size:13px; margin-top:2px; }
-  .example-flag{ display:inline-block; margin-top:8px; font-family:var(--mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; background:var(--surface-2); color:var(--accent-text); padding:3px 10px; border-radius:100px; }
+  .desk-list{ display:flex; flex-direction:column; }
+  .desk-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 4px; border-bottom:1px solid var(--border); cursor:pointer; }
+  .desk-row:last-child{ border-bottom:none; }
+  .desk-row:hover .tkr{ color:var(--accent-text); }
+  .desk-row .tkr{ font-family:var(--mono); font-weight:600; font-size:13px; }
+  .desk-row .nm{ font-size:11.5px; color:var(--muted); }
+  .desk-row .val{ font-family:var(--mono); font-size:12.5px; }
 
-  .tally{ margin-top:22px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px 24px; text-align:center; box-shadow:var(--shadow); }
-  .tally .big{ font-family:var(--mono); font-size:clamp(20px,5vw,30px); font-weight:700; letter-spacing:-.01em; line-height:1.2; }
-  .tally .lbl{ font-size:13px; color:var(--ink-soft); margin-top:4px; }
-  .tally .dots{ display:flex; justify-content:center; gap:8px; margin-top:14px; }
-  .tally .dots span{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700; font-size:12px; color:var(--surface); }
+  /* ============ company terminal ============ */
+  .co-head{ padding:34px 0 0; }
+  .co-head .row1{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .co-head h1{ font-size:clamp(24px,4.5vw,32px); }
+  .co-head .tkr{ font-family:var(--mono); color:var(--muted); font-size:14px; }
+  .co-head .price-row{ display:flex; align-items:baseline; gap:14px; margin-top:8px; flex-wrap:wrap; }
+  .co-head .price{ font-family:var(--mono); font-size:26px; font-weight:600; }
+  .co-head .chg{ font-family:var(--mono); font-size:14px; }
+  .ret-strip{ display:flex; gap:0; margin-top:16px; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .ret-strip .cell{ flex:1; text-align:center; padding:9px 4px; border-right:1px solid var(--border); }
+  .ret-strip .cell:last-child{ border-right:none; }
+  .ret-strip .cell .k{ font-size:9.5px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; }
+  .ret-strip .cell .v{ font-family:var(--mono); font-size:12.5px; font-weight:600; margin-top:3px; }
 
-  .as-of-note{ text-align:center; font-size:12px; color:var(--muted); margin-top:10px; font-family:var(--mono); }
+  .mode-toggle{ display:inline-flex; margin-top:20px; border:1px solid var(--border); border-radius:9px; overflow:hidden; }
+  .mode-toggle button{ font-family:var(--mono); font-size:11.5px; padding:8px 16px; border:none; background:var(--surface); color:var(--muted); cursor:pointer; letter-spacing:.03em; }
+  .mode-toggle button.active{ background:var(--ink); color:var(--bg); }
+  @media(prefers-color-scheme:dark){ :root:not([data-theme="light"]) .mode-toggle button.active{ background:var(--accent); color:#171208; } }
+  :root[data-theme="dark"] .mode-toggle button.active{ background:var(--accent); color:#171208; }
 
-  /* ---------- price chart ---------- */
-  .chart-wrap{ margin-top:22px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 18px 14px; box-shadow:var(--shadow); }
+  .matrix{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  @media(min-width:640px){ .matrix{ grid-template-columns:repeat(3,1fr); } }
+  .matrix .cell{ background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:13px 14px; cursor:pointer; transition:border-color .12s; }
+  .matrix .cell:hover{ border-color:var(--accent); }
+  .matrix .cell .k{ font-family:var(--mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+  .matrix .cell .v{ font-family:var(--serif); font-weight:600; font-size:15.5px; margin-top:6px; }
+  .matrix .cell.strong .v, .matrix .cell.improving .v{ color:var(--pos); }
+  .matrix .cell.weak .v, .matrix .cell.declining .v{ color:var(--neg); }
+  .matrix .cell.moderate .v{ color:var(--accent-text); }
+  .matrix .cell.nodata .v{ color:var(--muted); }
+  .matrix-detail{ margin-top:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
+
+  .chart-wrap{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px 12px; }
   .chart-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
   .chart-caption{ margin-top:6px; font-size:11.5px; color:var(--muted); text-align:center; }
   .chart-caption .dot-buy{ color:var(--pos); } .chart-caption .dot-sell{ color:var(--neg); }
 
-  /* ---------- strategy cards ---------- */
-  .cards{ display:flex; flex-direction:column; gap:12px; margin-top:26px; }
-  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-  .card summary{ list-style:none; cursor:pointer; padding:15px 18px; display:flex; align-items:center; gap:10px; }
-  .card summary::-webkit-details-marker{ display:none; }
-  .card .dot{ width:10px; height:10px; border-radius:50%; flex:none; }
-  .card .name{ font-family:var(--serif); font-weight:600; font-size:14.5px; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .card .state-pill{ font-family:var(--mono); font-size:10.5px; font-weight:600; padding:3px 10px; border-radius:100px; white-space:nowrap; flex:none; }
+  .fund-metric{ background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:13px 15px; }
+  .fund-metric .k{ font-family:var(--mono); font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .fund-metric .v{ font-family:var(--mono); font-size:19px; font-weight:600; margin-top:5px; }
+  .fund-metric .src{ font-size:10px; color:var(--muted); margin-top:5px; font-family:var(--mono); }
+
+  .obs-list{ display:flex; flex-direction:column; gap:8px; }
+  .obs-list .o{ font-size:13px; color:var(--ink-soft); line-height:1.55; padding-left:16px; position:relative; }
+  .obs-list .o::before{ content:'—'; position:absolute; left:0; color:var(--accent); }
+
+  .val-scale{ margin-top:14px; }
+  .val-scale .track{ position:relative; height:8px; border-radius:100px; background:linear-gradient(90deg, var(--pos), var(--surface-3) 50%, var(--neg)); }
+  .val-scale .marker{ position:absolute; top:-5px; width:3px; height:18px; background:var(--ink); border-radius:2px; }
+  .val-scale .labels{ display:flex; justify-content:space-between; margin-top:6px; font-family:var(--mono); font-size:10px; color:var(--muted); text-transform:uppercase; }
+
+  .strat-cards{ display:flex; flex-direction:column; gap:10px; }
+  .strat-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .strat-card summary{ list-style:none; cursor:pointer; padding:14px 16px; display:flex; align-items:center; gap:10px; }
+  .strat-card summary::-webkit-details-marker{ display:none; }
+  .strat-card .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .strat-card .name{ font-family:var(--serif); font-weight:600; font-size:13.5px; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .state-pill{ font-family:var(--mono); font-size:10px; font-weight:600; padding:3px 9px; border-radius:100px; white-space:nowrap; flex:none; }
   .state-pill.held{ background:color-mix(in srgb, var(--pos) 18%, var(--surface)); color:var(--pos); }
   .state-pill.qualifies{ background:color-mix(in srgb, var(--accent) 20%, var(--surface)); color:var(--accent-text); }
   .state-pill.not-selected{ background:color-mix(in srgb, var(--neg) 14%, var(--surface)); color:var(--neg); }
   .state-pill.no-data{ background:var(--surface-2); color:var(--muted); border:1px dashed var(--border); }
-  .card .chev{ color:var(--muted); font-size:10px; transition:transform .15s ease; }
-  .card[open] .chev{ transform:rotate(90deg); }
-  .card .body{ padding:0 18px 18px; }
-  .card .rule{ font-size:13px; color:var(--ink-soft); line-height:1.55; }
-  .card .why{ margin-top:12px; font-size:13px; color:var(--ink); background:var(--surface-2); border-radius:8px; padding:10px 12px; }
-  .card .why b{ font-family:var(--mono); }
+  .strat-card .chev{ color:var(--muted); font-size:10px; }
+  .strat-card[open] .chev{ transform:rotate(90deg); }
+  .strat-card .body{ padding:0 16px 16px; }
+  .strat-card .rule{ font-size:12.5px; color:var(--ink-soft); line-height:1.55; }
+  .strat-card .why{ margin-top:10px; font-size:12.5px; color:var(--ink); background:var(--surface-2); border-radius:8px; padding:9px 11px; }
   .checks{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-  .checks span{ font-family:var(--mono); font-size:11px; padding:3px 9px; border-radius:100px; }
+  .checks span{ font-family:var(--mono); font-size:10.5px; padding:3px 8px; border-radius:100px; }
   .checks span.pass{ background:color-mix(in srgb, var(--pos) 16%, var(--surface)); color:var(--pos); }
   .checks span.fail{ background:color-mix(in srgb, var(--neg) 14%, var(--surface)); color:var(--neg); }
-
-  .stat-row{ display:flex; gap:20px; margin-top:14px; flex-wrap:wrap; }
-  .stat-row .stat .v{ font-family:var(--mono); font-weight:600; font-size:15px; }
-  .stat-row .stat .k{ font-size:10.5px; color:var(--muted); }
-
-  table.trades{ width:100%; border-collapse:collapse; margin-top:12px; font-size:12px; }
-  table.trades th{ text-align:right; font-family:var(--mono); font-size:9.5px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:0 6px 6px; border-bottom:1px solid var(--border); }
+  .stat-row{ display:flex; gap:18px; margin-top:12px; flex-wrap:wrap; }
+  .stat-row .stat .v{ font-family:var(--mono); font-weight:600; font-size:14px; }
+  .stat-row .stat .k{ font-size:10px; color:var(--muted); }
+  table.trades{ width:100%; border-collapse:collapse; margin-top:10px; font-size:11.5px; }
+  table.trades th{ text-align:right; font-family:var(--mono); font-size:9px; text-transform:uppercase; color:var(--muted); font-weight:500; padding:0 5px 5px; border-bottom:1px solid var(--border); }
   table.trades th:first-child, table.trades td:first-child{ text-align:left; }
-  table.trades td{ padding:6px; border-bottom:1px solid var(--border); text-align:right; font-family:var(--mono); }
+  table.trades td{ padding:5px; border-bottom:1px solid var(--border); text-align:right; font-family:var(--mono); }
   table.trades tr:last-child td{ border-bottom:none; }
-  table.trades .pnl-pos{ color:var(--pos); } table.trades .pnl-neg{ color:var(--neg); }
-  .no-trades{ font-size:12.5px; color:var(--muted); margin-top:10px; font-style:italic; }
-  .strat-track{ margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); font-size:11.5px; color:var(--muted); }
+  .pnl-pos{ color:var(--pos); } .pnl-neg{ color:var(--neg); }
+  .no-trades{ font-size:12px; color:var(--muted); margin-top:8px; font-style:italic; }
+  .strat-track{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); font-size:11px; color:var(--muted); }
 
-  .disclaimer{ margin-top:30px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:16px 18px; font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
-  .disclaimer b{ color:var(--ink); }
+  .notes-box textarea{ width:100%; min-height:120px; background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:12px 14px; font-family:var(--sans); font-size:13px; color:var(--ink); resize:vertical; outline:none; }
+  .notes-box textarea:focus{ border-color:var(--accent); }
+  .thesis-grid{ display:grid; grid-template-columns:1fr; gap:10px; } @media(min-width:700px){ .thesis-grid{ grid-template-columns:1fr 1fr; } }
+  .thesis-field label{ font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); display:block; margin-bottom:6px; }
+  .thesis-field textarea{ width:100%; min-height:70px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:9px 11px; font-family:var(--sans); font-size:12.5px; color:var(--ink); resize:vertical; outline:none; }
+  .thesis-field textarea:focus{ border-color:var(--accent); }
+  .save-hint{ font-size:11px; color:var(--muted); margin-top:8px; font-family:var(--mono); }
 
-  /* ---------- strategy performance (portfolio-level backtest charts) ---------- */
-  .perf-section{ margin-top:40px; }
-  .perf-section h2{ font-size:17px; text-align:center; }
-  .perf-section .perf-sub{ text-align:center; font-size:13px; color:var(--ink-soft); margin-top:6px; max-width:52ch; margin-left:auto; margin-right:auto; }
-  .perf-grid{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:20px; }
+  /* ============ watchlist / journal ============ */
+  .wl-row{ display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:center; padding:11px 4px; border-bottom:1px solid var(--border); }
+  .wl-row:last-child{ border-bottom:none; }
+  .wl-row .nm{ min-width:0; } .wl-row .nm .t{ font-family:var(--mono); font-weight:600; font-size:13px; cursor:pointer; } .wl-row .nm .n{ font-size:11px; color:var(--muted); }
+  .add-row{ display:flex; gap:8px; margin-bottom:14px; }
+  .add-row input{ flex:1; font-family:var(--mono); font-size:13px; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--ink); outline:none; }
+
+  .journal-date{ font-family:var(--serif); font-size:20px; font-weight:600; }
+  .journal-nav{ display:flex; gap:8px; align-items:center; }
+  .day-section{ margin-top:16px; }
+  .day-section h3{ font-size:13px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:8px; }
+  .reviewed-chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11.5px; background:var(--surface-2); border:1px solid var(--border); padding:4px 10px; border-radius:100px; margin:0 6px 6px 0; }
+  .reviewed-chip button{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; padding:0; }
+
+  /* ============ journey ============ */
+  .timeline{ position:relative; padding-left:26px; }
+  .timeline::before{ content:''; position:absolute; left:6px; top:6px; bottom:6px; width:1.5px; background:var(--border); }
+  .tl-item{ position:relative; padding-bottom:26px; }
+  .tl-item::before{ content:''; position:absolute; left:-26px; top:4px; width:9px; height:9px; border-radius:50%; background:var(--accent); }
+  .tl-item .yr{ font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .tl-item .t{ font-family:var(--serif); font-weight:600; font-size:15px; margin-top:3px; }
+  .tl-item .d{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; line-height:1.55; }
+
+  /* ============ methodology ============ */
+  .method-section{ margin-top:28px; }
+  .method-section h3{ font-size:14.5px; margin-bottom:8px; }
+  .method-section p, .method-section li{ font-size:13px; color:var(--ink-soft); line-height:1.65; }
+  .method-section ul{ padding-left:18px; margin:6px 0; }
+
+  footer{ margin-top:60px; text-align:center; font-size:11.5px; color:var(--muted); padding-top:24px; border-top:1px solid var(--border); }
+  footer a{ color:var(--accent-text); text-decoration:none; }
+
+  .perf-grid{ display:grid; grid-template-columns:1fr; gap:14px; }
   @media(min-width:640px){ .perf-grid{ grid-template-columns:1fr 1fr; } }
-  .perf-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+  .perf-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
   .perf-card img{ width:100%; display:block; background:var(--surface-2); }
   .perf-card .cap{ padding:12px 14px; }
-  .perf-card .cap .t{ font-family:var(--serif); font-weight:600; font-size:13.5px; }
-  .perf-card .cap .d{ font-size:12px; color:var(--ink-soft); margin-top:3px; line-height:1.5; }
+  .perf-card .cap .t{ font-family:var(--serif); font-weight:600; font-size:13px; }
+  .perf-card .cap .d{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; line-height:1.5; }
 
-  footer{ margin-top:40px; text-align:center; font-size:11.5px; color:var(--muted); }
+  .comp-table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .comp-table th{ text-align:right; font-family:var(--mono); font-size:9.5px; text-transform:uppercase; color:var(--muted); padding:0 8px 8px; border-bottom:1px solid var(--border); }
+  .comp-table th:first-child, .comp-table td:first-child{ text-align:left; }
+  .comp-table td{ padding:8px; text-align:right; font-family:var(--mono); border-bottom:1px solid var(--border); }
+  .comp-table tr:last-child td{ border-bottom:none; }
+  .comp-table tr:hover td{ background:var(--surface-2); }
+  .table-scroll{ overflow-x:auto; }
+
+  .not-found{ margin:40px auto 0; max-width:560px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:24px; text-align:center; }
+  .not-found p{ font-size:13.5px; color:var(--ink-soft); line-height:1.6; }
 </style>
 
-<div class="wrap">
-  <header class="top">
-    <div class="wordmark">🪙 SwingLab</div>
-    <h1>What do five trading rules say about this stock?</h1>
-    <p class="sub">Type any NSE stock — not just the big ones. 500 are ready instantly; anything else gets fetched and analyzed live, right here.</p>
-
-    <div class="search-box">
-      <input type="text" id="search-input" placeholder="Type a stock name — e.g. Reliance, TCS, INFY…" autocomplete="off" spellcheck="false">
-      <div class="suggestions" id="suggestions"></div>
-    </div>
-    <div class="search-hint" id="search-hint">Covers 500 stocks · last updated <span id="as-of-hint"></span></div>
-  </header>
-
-  <div class="not-found" id="not-found" hidden>
-    <p>Couldn't analyze "<span class="ticker-tried" id="not-found-ticker"></span>".</p>
-    <p style="margin-top:8px">Check the symbol and try again.</p>
-  </div>
-
-  <div id="results"></div>
-
-  <div class="disclaimer">
-    <b>Read this before acting on anything above:</b> each card shows what a rule says and how it did in the past — not advice, not a buy/sell call, and not a promise it keeps working. 5 rules agreeing is 5 opinions, not proof.
-  </div>
-
-  <div class="perf-section">
-    <h2>How the 5 strategies compared, 2010–2026</h2>
-    <p class="perf-sub">Not this one stock — the full Nifty 500 backtest each rule was built and judged on.</p>
-    <div class="perf-grid">
-      <div class="perf-card">
-        <img src="/assets/charts/growth_of_rupee.png" alt="Growth of ₹1 invested in each strategy, 2010–2026" loading="lazy">
-        <div class="cap"><div class="t">Growth of ₹1</div><div class="d">What ₹1 invested in 2010 became under each strategy — the headline comparison, before you look at how bumpy the ride was.</div></div>
-      </div>
-      <div class="perf-card">
-        <img src="/assets/charts/drawdown.png" alt="Drawdown from peak over time for each strategy" loading="lazy">
-        <div class="cap"><div class="t">Drawdown</div><div class="d">How far each strategy fell from its prior peak at every point in time — the real cost of the return above.</div></div>
-      </div>
-      <div class="perf-card">
-        <img src="/assets/charts/rolling_sharpe.png" alt="Rolling Sharpe ratio for each strategy" loading="lazy">
-        <div class="cap"><div class="t">Rolling Sharpe</div><div class="d">Risk-adjusted return in 3-year windows — whether an edge held up across different market regimes, or only in one.</div></div>
-      </div>
-      <div class="perf-card">
-        <img src="/assets/charts/rolling_cagr.png" alt="Rolling CAGR for each strategy" loading="lazy">
-        <div class="cap"><div class="t">Rolling CAGR</div><div class="d">Annualized return in the same rolling windows — a strategy that only wins in one stretch shows up here.</div></div>
-      </div>
-      <div class="perf-card">
-        <img src="/assets/charts/annual_returns.png" alt="Calendar-year returns for each strategy" loading="lazy">
-        <div class="cap"><div class="t">Annual returns</div><div class="d">Calendar-year-by-calendar-year returns — where consistency (or the lack of it) is easiest to see.</div></div>
-      </div>
-      <div class="perf-card">
-        <img src="/assets/charts/turnover.png" alt="Portfolio turnover for each strategy" loading="lazy">
-        <div class="cap"><div class="t">Turnover</div><div class="d">How much of the portfolio traded over each period — the real-world cost the return-only chart hides.</div></div>
-      </div>
+<div class="topnav">
+  <div class="topnav-in">
+    <div class="brand" data-nav="#/"><span class="dot"></span>SWINGLAB</div>
+    <nav class="mainlinks" id="mainlinks">
+      <a href="#/companies" data-r="companies">Companies</a>
+      <a href="#/strategy-lab" data-r="strategy-lab">Strategy Lab</a>
+      <a href="#/watchlist" data-r="watchlist">Watchlist</a>
+      <a href="#/journal" data-r="journal">Journal</a>
+      <a href="#/journey" data-r="journey">Journey</a>
+      <a href="#/methodology" data-r="methodology">Methodology</a>
+    </nav>
+    <div class="nav-right">
+      <div class="marketpill" id="market-pill">·</div>
+      <button class="searchbtn" id="open-cmdk">Search <kbd>⌘K</kbd></button>
     </div>
   </div>
-
-  <footer>SwingLab · Nifty 500 · research tool, not investment advice</footer>
 </div>
 
+<div id="cmdk-root"></div>
+<div class="wrap" id="view"></div>
+<div class="wrap"><footer>SwingLab is a personal research project by Rishit — built to make my investing process more systematic.<br><a href="https://github.com/hasijarishit-tech/swinglab-signals" target="_blank" rel="noopener">github.com/hasijarishit-tech/swinglab-signals</a></footer></div>
+
 <script>
-(async function(){
-  const resultsEl = document.getElementById('results');
-  const notFoundEl = document.getElementById('not-found');
-  const notFoundTicker = document.getElementById('not-found-ticker');
-  const searchInput = document.getElementById('search-input');
-  const suggestionsEl = document.getElementById('suggestions');
+(function(){
+  const API = '';
+  const $view = document.getElementById('view');
+  let META = null, MARKET = null, NAMES = {};
 
-  const API = ''; // same-origin: FastAPI serves both the API and this page
+  /* ---------------- utils ---------------- */
+  function fmtPct(x, d){ d = d==null?1:d; return x==null ? '—' : (x>=0?'+':'') + x.toFixed(d) + '%'; }
+  function fmtNum(x, d){ d = d==null?1:d; return x==null ? '—' : x.toLocaleString('en-IN', {maximumFractionDigits:d}); }
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function go(hash){ location.hash = hash; }
 
-  let META = null;
-  try {
-    const resp = await fetch(`${API}/api/meta`);
-    META = await resp.json();
-  } catch (e) {
-    resultsEl.innerHTML = '<p style="text-align:center;color:var(--neg)">Could not reach the SwingLab Signals backend. Is it running?</p>';
-    return;
+  /* ---------------- boot: load meta + market ---------------- */
+  async function boot(){
+    try{
+      const r = await fetch(`${API}/api/meta`);
+      META = await r.json();
+      NAMES = META.names || {};
+    }catch(e){ META = {strategy_meta:{}, as_of:'—'}; }
+    refreshMarketPill();
+    router();
   }
 
-  document.getElementById('as-of-hint').textContent = META.as_of + ' (live stocks: just now)';
+  async function refreshMarketPill(){
+    try{
+      const r = await fetch(`${API}/api/market`);
+      MARKET = await r.json();
+      const v = MARKET.vix;
+      const n = MARKET.nifty50;
+      const pillEl = document.getElementById('market-pill');
+      if (n && v){
+        const lit = n.chg_pct >= 0 ? 'var(--pos)' : 'var(--neg)';
+        pillEl.innerHTML = `<span class="lit" style="background:${lit}"></span> NIFTY ${fmtNum(n.level,0)} ${fmtPct(n.chg_pct)} · VIX ${v.level.toFixed(1)}`;
+      }
+    }catch(e){ /* silent — pill just stays a dot */ }
+  }
 
+  /* ---------------- strategy labels ---------------- */
   const STRATEGY_ORDER = ['S1','S2','S3','S4','S5'];
+  const STRATEGY_LABEL = { S1:'S1 · Long-Term Trend', S2:'S2 · Momentum', S3:'S3 · Value', S4:'S4 · Price Strength', S5:'S5 · Quality' };
   const STRATEGY_RULES = {
     S1: 'Hold whenever price is above its 250-day moving average; go flat when it falls below. Ride the trend until it breaks.',
     S2: 'Once a month, rank the universe by 6-month momentum (skipping the most recent month) and hold the top 30. Buy what\'s already working.',
@@ -232,194 +343,306 @@
     S5: 'Every quarter: ROE > 15%, ROCE > 15%, positive free cash flow, growing earnings, manageable debt, 3 straight profitable years — all required. Survivors ranked by value.',
   };
 
-  // ---------- search (server-side, debounced) ----------
-  let searchAbort = null, debounceTimer = null;
-  async function search(q){
+  /* ================================================================
+     ROUTER
+  ================================================================ */
+  const routes = {
+    ''            : renderHome,
+    'companies'   : renderHome,
+    'company'     : renderCompany,
+    'strategy-lab': renderStrategyLab,
+    'watchlist'   : renderWatchlist,
+    'journal'     : renderJournal,
+    'journey'     : renderJourney,
+    'methodology' : renderMethodology,
+  };
+
+  function parseHash(){
+    const h = location.hash.replace(/^#\/?/, '');
+    const parts = h.split('/').filter(Boolean);
+    return { view: parts[0] || '', arg: parts[1] || null };
+  }
+
+  function router(){
+    const { view, arg } = parseHash();
+    document.querySelectorAll('nav.mainlinks a').forEach(a => a.classList.toggle('active', a.dataset.r === view || (view==='company' && a.dataset.r==='companies')));
+    const fn = routes[view] || renderHome;
+    window.scrollTo(0,0);
+    fn(arg);
+  }
+  window.addEventListener('hashchange', router);
+  document.querySelector('.brand').addEventListener('click', () => go('#/'));
+
+  /* ================================================================
+     SEARCH (shared: home hero + company page)
+  ================================================================ */
+  let searchAbort = null;
+  async function searchStocks(q){
     q = q.trim();
     if (!q) return [];
     if (searchAbort) searchAbort.abort();
     searchAbort = new AbortController();
-    try {
-      const resp = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`, {signal: searchAbort.signal});
-      return await resp.json();
-    } catch (e) {
-      return [];
-    }
+    try{
+      const r = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`, {signal: searchAbort.signal});
+      return await r.json();
+    }catch(e){ return []; }
   }
 
-  function renderSuggestions(list){
-    if (!list.length){ suggestionsEl.classList.remove('open'); suggestionsEl.innerHTML=''; return; }
-    suggestionsEl.innerHTML = list.map(e =>
-      `<div class="row" data-ticker="${e.ticker}"><span class="tkr">${e.symbol}</span><span class="cname">${e.name}</span></div>`
-    ).join('');
-    suggestionsEl.classList.add('open');
-    suggestionsEl.querySelectorAll('.row').forEach(row => {
-      row.addEventListener('click', () => {
-        showStock(row.dataset.ticker);
-        searchInput.value = row.querySelector('.tkr').textContent;
-        suggestionsEl.classList.remove('open');
-      });
+  function wireSearchBox(inputEl, suggestEl){
+    let debounce;
+    inputEl.addEventListener('input', () => {
+      clearTimeout(debounce);
+      const q = inputEl.value;
+      debounce = setTimeout(async () => {
+        const list = await searchStocks(q);
+        if (!list.length){ suggestEl.classList.remove('open'); suggestEl.innerHTML=''; return; }
+        suggestEl.innerHTML = list.map(e => `<div class="row" data-t="${e.ticker}"><span class="tkr">${esc(e.symbol)}</span><span class="cname">${esc(e.name)}</span></div>`).join('');
+        suggestEl.classList.add('open');
+        suggestEl.querySelectorAll('.row').forEach(row => row.addEventListener('click', () => {
+          suggestEl.classList.remove('open'); inputEl.value='';
+          go('#/company/' + row.dataset.t);
+        }));
+      }, 180);
+    });
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter'){
+        const q = inputEl.value.trim().toUpperCase();
+        if (q){ suggestEl.classList.remove('open'); go('#/company/' + (q.endsWith('.NS') ? q : q + '.NS')); }
+      }
+    });
+    document.addEventListener('click', e => { if (!e.target.closest('.home-search')) suggestEl.classList.remove('open'); });
+  }
+
+  /* ================================================================
+     COMMAND PALETTE
+  ================================================================ */
+  const cmdkRoot = document.getElementById('cmdk-root');
+  const STATIC_CMDS = [
+    {label:'Home', hash:'#/'}, {label:'Strategy Lab', hash:'#/strategy-lab'},
+    {label:'Watchlist', hash:'#/watchlist'}, {label:'Daily Journal', hash:'#/journal'},
+    {label:'Investing Journey', hash:'#/journey'}, {label:'Methodology', hash:'#/methodology'},
+  ];
+  function openCmdk(){
+    cmdkRoot.innerHTML = `<div class="cmdk-backdrop" id="cmdk-bd"><div class="cmdk"><input id="cmdk-input" placeholder="Search a company, or jump to a page…" autocomplete="off"><div class="cmdk-list" id="cmdk-list"></div></div></div>`;
+    const bd = document.getElementById('cmdk-bd'), input = document.getElementById('cmdk-input'), list = document.getElementById('cmdk-list');
+    function renderList(items){ list.innerHTML = items.map((it,i) => `<div class="cmdk-item ${i===0?'sel':''}" data-hash="${it.hash}"><span>${esc(it.label)}</span><span class="k">${it.k||''}</span></div>`).join(''); }
+    renderList(STATIC_CMDS);
+    input.focus();
+    let debounce;
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+      const q = input.value.trim();
+      if (!q){ renderList(STATIC_CMDS); return; }
+      debounce = setTimeout(async () => {
+        const results = await searchStocks(q);
+        const items = results.map(r => ({label:`${r.symbol} — ${r.name}`, hash:'#/company/'+r.ticker, k:'company'}));
+        renderList(items.length ? items : STATIC_CMDS.filter(c => c.label.toLowerCase().includes(q.toLowerCase())));
+      }, 150);
+    });
+    function close(){ cmdkRoot.innerHTML=''; }
+    bd.addEventListener('click', e => { if (e.target === bd) close(); });
+    list.addEventListener('click', e => { const it = e.target.closest('.cmdk-item'); if (it){ go(it.dataset.hash); close(); } });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape') close();
+      if (e.key === 'Enter'){ const sel = list.querySelector('.cmdk-item'); if (sel) { go(sel.dataset.hash); close(); } }
     });
   }
-
-  searchInput.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    const q = searchInput.value;
-    debounceTimer = setTimeout(async () => renderSuggestions(await search(q)), 180);
+  document.getElementById('open-cmdk').addEventListener('click', openCmdk);
+  document.addEventListener('keydown', e => {
+    const tag = (document.activeElement && document.activeElement.tagName) || '';
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA';
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'){ e.preventDefault(); openCmdk(); }
+    else if (e.key === '/' && !typing){ e.preventDefault(); openCmdk(); }
   });
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter'){
-      const q = searchInput.value.trim().toUpperCase();
-      if (q){ showStock(q.endsWith('.NS') ? q : q + '.NS'); suggestionsEl.classList.remove('open'); }
+
+  /* ================================================================
+     HOME
+  ================================================================ */
+  function mktCard(label, snap, extra){
+    if (!snap) return `<div class="panel mkt-card"><div class="lbl">${label}</div><div class="empty-note" style="margin-top:10px">Data unavailable right now.</div></div>`;
+    const chgColor = snap.chg_pct >= 0 ? 'var(--pos)' : 'var(--neg)';
+    const regime = snap.regime;
+    let chipClass = 'warn';
+    if (regime === 'Uptrend' || regime === 'Calm') chipClass = 'good';
+    if (regime === 'Downtrend' || regime === 'Stressed') chipClass = 'bad';
+    return `<div class="panel mkt-card">
+      <div class="lbl">${label}</div>
+      <div class="lvl">${fmtNum(snap.level, snap.level>1000?0:2)}</div>
+      <div class="chg" style="color:${chgColor}">${fmtPct(snap.chg_pct)} 1D</div>
+      ${regime ? `<div class="regime"><span class="chip ${chipClass}">${regime}</span></div>` : ''}
+      <div class="asof">as of ${snap.as_of}</div>
+    </div>`;
+  }
+
+  function breadthCard(b){
+    if (!b) return `<div class="panel mkt-card"><div class="lbl">MARKET BREADTH</div><div class="empty-note" style="margin-top:10px">Data unavailable.</div></div>`;
+    const pct = Math.round(b.above_250dma / (b.above_250dma + b.below_250dma) * 100);
+    return `<div class="panel mkt-card">
+      <div class="lbl">MARKET BREADTH</div>
+      <div class="lvl">${pct}%</div>
+      <div class="chg">of ${b.universe_size} above their 250-day trend</div>
+      <div class="regime"><span class="chip ${pct>=50?'good':'bad'}">${b.above_250dma} up · ${b.below_250dma} down</span></div>
+      <div class="asof">Nifty 500 universe · as of ${b.as_of}</div>
+    </div>`;
+  }
+
+  function deskList(items, valueKey, valueFmt){
+    if (!items || !items.length) return `<p class="empty-note">No data available yet.</p>`;
+    return `<div class="desk-list">${items.map(it => `
+      <div class="desk-row" data-t="${it.ticker}.NS">
+        <div><span class="tkr">${esc(it.ticker)}</span> <span class="nm">${esc(it.name)}</span></div>
+        <div class="val" style="color:${it[valueKey]>=0?'var(--pos)':'var(--neg)'}">${valueFmt(it[valueKey])}</div>
+      </div>`).join('')}</div>`;
+  }
+
+  async function renderHome(){
+    $view.innerHTML = `
+      <div class="hero">
+        <div class="eyebrow">Personal Investing Research Lab</div>
+        <h1>My investing research lab.</h1>
+        <p class="sub">A systematic framework I built to study Indian equities through fundamentals, valuation, momentum, quality, market context and risk.</p>
+        <div class="disclaimer-line">Personal research project · not investment advice · nothing here predicts prices</div>
+        <div class="home-search">
+          <input type="text" id="home-search-input" placeholder="Search any NSE company — e.g. Reliance, TCS, Trent…" autocomplete="off" spellcheck="false">
+          <div class="suggestions" id="home-suggestions"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head"><h2>Market Snapshot</h2><span class="hint">Live — Yahoo Finance index data</span></div>
+        <div class="grid cols-4" id="mkt-cards"><div class="skeleton">Loading market data…</div></div>
+      </div>
+
+      <div class="section">
+        <div class="section-head"><h2>Today's Research Desk</h2><span class="hint">Research categories, not buy/sell calls · from the last universe update</span></div>
+        <div class="grid cols-3" id="desk-cards"><div class="skeleton">Loading…</div></div>
+      </div>
+    `;
+    wireSearchBox(document.getElementById('home-search-input'), document.getElementById('home-suggestions'));
+
+    try{
+      const r = await fetch(`${API}/api/market`);
+      const m = await r.json();
+      MARKET = m;
+      document.getElementById('mkt-cards').innerHTML =
+        mktCard('NIFTY 50', m.nifty50) + mktCard('NIFTY MIDCAP 50', m.midcap) + mktCard('INDIA VIX', m.vix) + breadthCard(m.breadth);
+      const b = m.breadth;
+      document.getElementById('desk-cards').innerHTML = `
+        <div class="panel">
+          <div class="eyebrow" style="margin-bottom:10px">Breakout / strong momentum</div>
+          ${deskList(b ? b.top_movers : null, 'momentum_pct', v => fmtPct(v,0))}
+        </div>
+        <div class="panel">
+          <div class="eyebrow" style="margin-bottom:10px">Losing momentum</div>
+          ${deskList(b ? b.bottom_movers : null, 'momentum_pct', v => fmtPct(v,0))}
+        </div>
+        <div class="panel">
+          <div class="eyebrow" style="margin-bottom:10px">Where to look next</div>
+          <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6">These lists are ranked purely by trailing price momentum across the Nifty 500 — a starting point for research, not a conclusion. Open any name's Company page for the full fundamentals + valuation + technical picture before forming a view.</p>
+        </div>
+      `;
+      document.querySelectorAll('.desk-row').forEach(row => row.addEventListener('click', () => go('#/company/' + row.dataset.t)));
+    }catch(e){
+      document.getElementById('mkt-cards').innerHTML = `<div class="empty-note">Could not reach the backend.</div>`;
+      document.getElementById('desk-cards').innerHTML = '';
     }
-  });
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.search-box')) suggestionsEl.classList.remove('open');
-  });
+  }
 
-  // ---------- helpers ----------
-  function fmtPct(x, digits){ digits = digits==null?1:digits; return x==null ? '—' : (x>=0?'+':'') + x.toFixed(digits) + '%'; }
-
+  /* ================================================================
+     COMPANY RESEARCH TERMINAL
+  ================================================================ */
   function stateFor(key, entry){
-    // "no data yet" (too little price/fundamentals history) must never
-    // count as an AVOID signal — it's not that the rule says no, it's that
-    // the rule can't say anything yet. Distinct from a real avoid.
     if (key === 'S1' && entry.rule_qualifies_now == null) return {label:'NOT ENOUGH HISTORY', cls:'no-data', signal:null};
     if (key === 'S2' && entry.rank == null) return {label:'NOT ENOUGH HISTORY', cls:'no-data', signal:null};
     if (key === 'S4' && entry.pct_from_52w_high == null) return {label:'NOT ENOUGH HISTORY', cls:'no-data', signal:null};
     if (key === 'S3' && entry.in_cheap_half == null) return {label:'NO DATA', cls:'no-data', signal:null};
     if (key === 'S5' && entry.passes_all_filters == null) return {label:'NO DATA', cls:'no-data', signal:null};
-
-    if (entry.held_now) return {label:'BUY / HOLD', cls:'held', signal:'buy'};
+    if (entry.held_now) return {label:'ACTIVE NOW', cls:'held', signal:'buy'};
     if (key === 'S1' && entry.rule_qualifies_now) return {label:'QUALIFIES, NO SLOT OPEN', cls:'qualifies', signal:'buy'};
     if (key === 'S5' && entry.passes_all_filters === true) return {label:'QUALIFIES, NOT TOP-RANKED', cls:'qualifies', signal:'buy'};
-    return {label:'AVOID / SELL', cls:'not-selected', signal:'avoid'};
+    return {label:'NOT ACTIVE', cls:'not-selected', signal:'avoid'};
   }
 
   function tradesTable(trades, isLive, key){
     if (!trades.length) return (isLive && key !== 'S1')
       ? '<p class="no-trades">Trade-by-trade history isn\'t computed for a freshly-analyzed stock yet — this shows today\'s signal only.</p>'
-      : '<p class="no-trades">This strategy never held this stock during the 2010–2026 backtest.</p>';
+      : '<p class="no-trades">This rule never held this stock over its backtest window.</p>';
     const rows = trades.slice(-6).reverse().map(t => {
       const pnl = t.pnl_pct;
       const pnlCell = pnl == null ? '<span style="color:var(--accent-text)">open</span>' : `<span class="${pnl>=0?'pnl-pos':'pnl-neg'}">${fmtPct(pnl,1)}</span>`;
       return `<tr><td>${t.entry_date}</td><td>${t.exit_date || '—'}</td><td>${t.hold_days ?? '—'}</td><td>${pnlCell}</td></tr>`;
     }).join('');
     const note = trades.length > 6 ? `<div class="no-trades">Showing the 6 most recent of ${trades.length} trades.</div>` : '';
-    return `<table class="trades"><thead><tr><th>Entry</th><th>Exit</th><th>Days held</th><th>P&amp;L</th></tr></thead><tbody>${rows}</tbody></table>${note}`;
+    return `<table class="trades"><thead><tr><th>Entry</th><th>Exit</th><th>Days</th><th>P&amp;L</th></tr></thead><tbody>${rows}</tbody></table>${note}`;
   }
 
-  function cardFor(key, entry, isLive){
-    const meta = META.strategy_meta[key];
+  function strategyCard(key, entry, isLive){
+    const meta = (META.strategy_meta || {})[key] || {cagr_pct:null, sharpe:null, max_drawdown_pct:null};
     const state = stateFor(key, entry);
-    let whyHtml = `<div class="why">${entry.note}`;
+    let whyHtml = `<div class="why">${esc(entry.note)}`;
     if (key === 'S1' && entry.pct_vs_sma != null) whyHtml += ` — <b>${fmtPct(entry.pct_vs_sma)}</b> vs. its 250-day SMA.`;
     if (key === 'S2' && entry.rank != null) whyHtml += ` (<b>${fmtPct(entry.momentum_pct)}</b> trailing momentum)`;
-    if (key === 'S3' && entry.value_rank != null) whyHtml += ` — value rank <b>#${entry.value_rank}</b>${entry.momentum_rank_within_value_group ? `, momentum rank <b>#${entry.momentum_rank_within_value_group}</b> within that group` : ''}.`;
+    if (key === 'S3' && entry.value_rank != null) whyHtml += ` — value rank <b>#${entry.value_rank}</b>.`;
     if (key === 'S4' && entry.pct_from_52w_high != null) whyHtml += ` — <b>${fmtPct(entry.pct_from_52w_high)}</b> from its 52-week high.`;
     whyHtml += '</div>';
 
     let checksHtml = '';
     if (key === 'S5' && entry.checks){
       const labelMap = {roe_above_15:'ROE > 15%', roce_above_15:'ROCE > 15%', positive_fcf:'Positive FCF', earnings_growing:'Earnings growing', debt_ok:'Debt manageable', consistent_3yr:'3yr consistent profit'};
-      checksHtml = '<div class="checks">' + Object.entries(entry.checks).map(([k,v]) =>
-        `<span class="${v?'pass':'fail'}">${v?'✓':'✕'} ${labelMap[k]||k}</span>`
-      ).join('') + '</div>';
+      checksHtml = '<div class="checks">' + Object.entries(entry.checks).map(([k,v]) => `<span class="${v?'pass':'fail'}">${v?'✓':'✕'} ${labelMap[k]||k}</span>`).join('') + '</div>';
       if (entry.roe_pct != null) checksHtml += `<div class="why" style="margin-top:8px">ROE <b>${entry.roe_pct}%</b> · ROCE <b>${entry.roce_pct}%</b></div>`;
     }
 
     const s = entry.stats;
     const statRow = s.num_trades > 0 ? `
       <div class="stat-row">
-        <div class="stat"><div class="v">${s.num_trades}</div><div class="k">Trades (this stock)</div></div>
+        <div class="stat"><div class="v">${s.num_trades}</div><div class="k">Trades</div></div>
         <div class="stat"><div class="v">${s.win_rate_pct}%</div><div class="k">Win rate</div></div>
-        <div class="stat"><div class="v ${s.avg_pnl_pct>=0?'pnl-pos':'pnl-neg'}" style="color:${s.avg_pnl_pct>=0?'var(--pos)':'var(--neg)'}">${fmtPct(s.avg_pnl_pct)}</div><div class="k">Avg P&amp;L / trade</div></div>
+        <div class="stat"><div class="v" style="color:${s.avg_pnl_pct>=0?'var(--pos)':'var(--neg)'}">${fmtPct(s.avg_pnl_pct)}</div><div class="k">Avg P&amp;L</div></div>
         <div class="stat"><div class="v">${s.avg_hold_days}d</div><div class="k">Avg hold</div></div>
       </div>` : '';
 
     return `
-      <details class="card">
+      <details class="strat-card">
         <summary>
           <span class="dot" style="background:var(--${key.toLowerCase()})"></span>
-          <span class="name">${meta.display_name.replace(/^S[1-5]:\\s*/,'')}</span>
+          <span class="name">${STRATEGY_LABEL[key]}</span>
           <span class="state-pill ${state.cls}">${state.label}</span>
           <span class="chev">▶</span>
         </summary>
         <div class="body">
           <p class="rule">${STRATEGY_RULES[key]}</p>
-          ${whyHtml}
-          ${checksHtml}
-          ${statRow}
+          ${whyHtml}${checksHtml}${statRow}
           ${tradesTable(entry.trades, isLive, key)}
-          <div class="strat-track">This strategy's own overall track record: ${fmtPct(meta.cagr_pct)} CAGR · Sharpe ${meta.sharpe.toFixed(2)} · max drawdown ${fmtPct(meta.max_drawdown_pct)}.</div>
+          <div class="strat-track">Rule's own track record (Nifty 500, 2010–2026): ${meta.cagr_pct!=null?fmtPct(meta.cagr_pct):'—'} CAGR · Sharpe ${meta.sharpe!=null?meta.sharpe.toFixed(2):'—'} · max drawdown ${meta.max_drawdown_pct!=null?fmtPct(meta.max_drawdown_pct):'—'}.</div>
         </div>
       </details>`;
   }
 
-  function showNotFound(query){
-    resultsEl.innerHTML = '';
-    notFoundTicker.textContent = query;
-    notFoundEl.hidden = false;
-  }
-
-  function showLoading(ticker){
-    notFoundEl.hidden = true;
-    resultsEl.innerHTML = `
-      <div class="stock-head">
-        <div class="name">Looking up ${ticker.replace('.NS','')}…</div>
-      </div>
-      <div class="tally"><div class="lbl">Checking the cache first; if this stock hasn't been analyzed before, fetching and scoring it now — usually a few seconds, occasionally up to 20-30.</div></div>
-    `;
-    window.scrollTo({top: resultsEl.offsetTop - 20, behavior: 'smooth'});
-  }
-
-  function showError(ticker, message){
-    resultsEl.innerHTML = '';
-    notFoundTicker.textContent = ticker.replace('.NS','');
-    document.querySelector('#not-found p:last-child').textContent = message;
-    notFoundEl.hidden = false;
-  }
-
-  function renderChart(chart){
+  function renderPriceChart(chart){
     const svg = document.getElementById('price-chart');
     const caption = document.getElementById('chart-caption');
     if (!svg || !caption) return;
-    if (!chart || !chart.close || chart.close.length < 2){
-      caption.textContent = 'Price chart unavailable for this stock.';
-      return;
-    }
+    if (!chart || !chart.close || chart.close.length < 2){ caption.textContent = 'Price chart unavailable for this stock.'; return; }
     const W = 680, H = 220, padL = 56, padR = 10, padT = 12, padB = 20;
     const plotW = W - padL - padR, plotH = H - padT - padB;
     const n = chart.close.length;
     const validSma = chart.sma.filter(v => v != null);
-    // log scale: a 16-year price series often spans a huge multiple (splits,
-    // bonuses, compounding) — a linear axis squashes the early years flat.
-    const yMin = Math.min(...chart.close, ...validSma);
-    const yMax = Math.max(...chart.close, ...validSma);
+    const yMin = Math.min(...chart.close, ...validSma), yMax = Math.max(...chart.close, ...validSma);
     const logPad = (Math.log(yMax) - Math.log(yMin)) * 0.08 || 0.05;
     const y0 = Math.log(yMin) - logPad, y1 = Math.log(yMax) + logPad;
-    const xAt = i => padL + (i / (n - 1)) * plotW;
-    const yAt = v => padT + (1 - (Math.log(v) - y0) / (y1 - y0)) * plotH;
-
-    const pricePts = chart.close.map((c, i) => `${xAt(i).toFixed(1)},${yAt(c).toFixed(1)}`).join(' ');
-
+    const xAt = i => padL + (i/(n-1)) * plotW;
+    const yAt = v => padT + (1 - (Math.log(v) - y0)/(y1 - y0)) * plotH;
+    const pricePts = chart.close.map((c,i) => `${xAt(i).toFixed(1)},${yAt(c).toFixed(1)}`).join(' ');
     let smaSegs = [], cur = [];
-    chart.sma.forEach((v, i) => {
-      if (v == null){ if (cur.length > 1) smaSegs.push(cur); cur = []; return; }
-      cur.push(`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`);
-    });
-    if (cur.length > 1) smaSegs.push(cur);
-
-    const markers = (chart.trades || []).map(t => {
-      const ex = t.entry_frac * (n - 1);
+    chart.sma.forEach((v,i) => { if (v==null){ if (cur.length>1) smaSegs.push(cur); cur=[]; return; } cur.push(`${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`); });
+    if (cur.length>1) smaSegs.push(cur);
+    const markers = (chart.trades||[]).map(t => {
+      const ex = t.entry_frac*(n-1);
       let s = `<circle cx="${xAt(ex).toFixed(1)}" cy="${yAt(t.entry_price).toFixed(1)}" r="4" style="fill:var(--pos);stroke:var(--surface)" stroke-width="1.5"><title>Buy ${t.entry_date} @ ₹${t.entry_price}</title></circle>`;
-      if (t.exit_frac != null){
-        const xx = t.exit_frac * (n - 1);
-        s += `<circle cx="${xAt(xx).toFixed(1)}" cy="${yAt(t.exit_price).toFixed(1)}" r="4" style="fill:var(--neg);stroke:var(--surface)" stroke-width="1.5"><title>Sell ${t.exit_date} @ ₹${t.exit_price}</title></circle>`;
-      }
+      if (t.exit_frac != null){ const xx=t.exit_frac*(n-1); s += `<circle cx="${xAt(xx).toFixed(1)}" cy="${yAt(t.exit_price).toFixed(1)}" r="4" style="fill:var(--neg);stroke:var(--surface)" stroke-width="1.5"><title>Sell ${t.exit_date} @ ₹${t.exit_price}</title></circle>`; }
       return s;
     }).join('');
-
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.innerHTML = `
       <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+plotH}" style="stroke:var(--border)"/>
@@ -432,77 +655,603 @@
       <polyline points="${pricePts}" fill="none" style="stroke:var(--ink)" stroke-width="1.8"/>
       ${markers}
     `;
-    const hasTrades = (chart.trades || []).length > 0;
-    caption.innerHTML = `Price, split-adjusted, with its ${chart.sma_period}-day trend line (dashed)` +
-      (hasTrades ? ` · <span class="dot-buy">●</span> buy · <span class="dot-sell">●</span> sell — Strategy 1's own rule, computed live` : '');
+    const hasTrades = (chart.trades||[]).length > 0;
+    caption.innerHTML = `Price, split-adjusted, log scale, with its ${chart.sma_period}-day trend line (dashed)` + (hasTrades ? ` · <span class="dot-buy">●</span> buy · <span class="dot-sell">●</span> sell — Strategy 1's rule, live` : '');
   }
 
-  async function showStock(ticker, isExample){
-    if (!isExample) showLoading(ticker);
-    let result, chart = null;
-    try {
-      const [resp, chartResp] = await Promise.all([
+  function sparkline(id, values, color){
+    const el = document.getElementById(id);
+    if (!el) return;
+    const vals = values.filter(v => v != null);
+    if (vals.length < 2){ el.innerHTML = ''; return; }
+    const W=200,H=44,pad=3;
+    const min=Math.min(...vals), max=Math.max(...vals), range=(max-min)||1;
+    const pts = values.map((v,i) => v==null ? null : `${(pad+(i/(values.length-1))*(W-2*pad)).toFixed(1)},${(H-pad-((v-min)/range)*(H-2*pad)).toFixed(1)}`).filter(Boolean).join(' ');
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><polyline points="${pts}" fill="none" style="stroke:${color}" stroke-width="2"/></svg>`;
+  }
+
+  function labelFromValue(v, thresholds, labels){
+    // thresholds ascending; labels.length = thresholds.length+1
+    if (v == null) return labels[labels.length-1];
+    for (let i=0;i<thresholds.length;i++) if (v < thresholds[i]) return labels[i];
+    return labels[labels.length-1];
+  }
+
+  function matrixCell(key, label, value, cls, detail){
+    return `<div class="matrix cell ${cls}" data-detail="${esc(detail)}"><div class="cell ${cls}"><div class="k">${label}</div><div class="v">${esc(value)}</div></div></div>`;
+  }
+
+  function buildMatrix(stock, fund){
+    const s = stock.strategies;
+    const cells = [];
+    // QUALITY (from S5 checks)
+    if (s.S5 && s.S5.checks){
+      const passed = Object.values(s.S5.checks).filter(Boolean).length, total = Object.keys(s.S5.checks).length;
+      const cls = passed===total?'strong':passed>=total/2?'moderate':'weak';
+      cells.push({k:'BUSINESS QUALITY', v: passed===total?'Strong':passed>=total/2?'Moderate':'Weak', cls, detail:`Passes ${passed} of ${total} quality checks: ROE>15%, ROCE>15%, positive free cash flow, manageable debt.`});
+    } else cells.push({k:'BUSINESS QUALITY', v:'No data', cls:'nodata', detail:'No usable fundamentals for this company (common for banks/NBFCs, or a very new listing).'});
+    // VALUATION
+    if (fund && fund.available && fund.valuation && fund.valuation.current){
+      const pe = fund.valuation.current.pe, med = fund.valuation.own_5y_median_pe;
+      let v='Fair', cls='moderate';
+      if (pe!=null && med!=null){ const gap=(pe/med-1)*100; if (gap>20){v='Expensive';cls='weak';} else if (gap<-20){v='Cheap';cls='strong';} }
+      cells.push({k:'VALUATION', v, cls, detail: pe!=null ? `Trading at ${pe}x earnings vs its own ${med??'—'}x 5-year median.` : 'P/E not computable (no positive earnings, or no fundamentals data).'});
+    } else cells.push({k:'VALUATION', v:'No data', cls:'nodata', detail:'Fundamentals unavailable for this company.'});
+    // GROWTH
+    if (fund && fund.available && fund.revenue_cagr_pct != null){
+      const g = fund.revenue_cagr_pct;
+      const cls = g>=15?'strong':g>=5?'moderate':'weak';
+      cells.push({k:'GROWTH', v:`${g}% rev. CAGR`, cls, detail:`Revenue CAGR over the full reported history (${fund.years[0]}–${fund.years[fund.years.length-1]}).`});
+    } else cells.push({k:'GROWTH', v:'No data', cls:'nodata', detail:'Revenue history unavailable.'});
+    // MOMENTUM
+    if (s.S2 && s.S2.momentum_pct != null){
+      const m = s.S2.momentum_pct;
+      const cls = m>15?'improving':m>-5?'moderate':'declining';
+      cells.push({k:'MOMENTUM', v:`${fmtPct(m,0)} (6m)`, cls, detail:`Trailing 6-month price momentum (skipping the most recent month), ranked #${s.S2.rank} of ${s.S2.universe_ranked} in the universe.`});
+    } else cells.push({k:'MOMENTUM', v:'No data', cls:'nodata', detail:'Not enough price history to compute momentum yet.'});
+    // PROFITABILITY
+    if (fund && fund.available && fund.roce_pct && fund.roce_pct.filter(v=>v!=null).length){
+      const roce = fund.roce_pct.filter(v=>v!=null).slice(-1)[0];
+      const cls = roce>=18?'strong':roce>=10?'moderate':'weak';
+      cells.push({k:'PROFITABILITY', v:`${roce}% ROCE`, cls, detail:`Most recent reported ROCE (screener.in). Return on capital employed measures how efficiently the business turns capital into profit.`});
+    } else cells.push({k:'PROFITABILITY', v:'No data', cls:'nodata', detail:'ROCE not available for this company.'});
+    // BALANCE SHEET
+    if (fund && fund.available && fund.debt_to_equity && fund.debt_to_equity.filter(v=>v!=null).length){
+      const de = fund.debt_to_equity.filter(v=>v!=null).slice(-1)[0];
+      const cls = de<0.5?'strong':de<1.5?'moderate':'weak';
+      cells.push({k:'BALANCE SHEET', v:`${de}x D/E`, cls, detail:`Debt-to-equity from the most recent reported balance sheet.`});
+    } else cells.push({k:'BALANCE SHEET', v:'No data', cls:'nodata', detail:'Balance-sheet figures unavailable.'});
+    // CASH FLOW
+    if (fund && fund.available && fund.free_cash_flow_cr){
+      const pts = fund.free_cash_flow_cr.filter(v=>v!=null);
+      if (pts.length){
+        const negYears = pts.filter(v=>v<0).length;
+        const cls = negYears===0?'strong':negYears<=pts.length/3?'moderate':'weak';
+        cells.push({k:'CASH FLOW', v: negYears===0?'Consistent':`Neg. in ${negYears}/${pts.length}yr`, cls, detail:`Free cash flow was negative in ${negYears} of the last ${pts.length} reported years.`});
+      } else cells.push({k:'CASH FLOW', v:'No data', cls:'nodata', detail:'No FCF history available.'});
+    } else cells.push({k:'CASH FLOW', v:'No data', cls:'nodata', detail:'No FCF history available.'});
+    // MARKET TREND
+    if (s.S1){
+      const above = s.S1.rule_qualifies_now;
+      cells.push({k:'MARKET TREND', v: above==null?'No data':above?'Uptrend':'Downtrend', cls: above==null?'nodata':above?'strong':'weak', detail: s.S1.note});
+    }
+    // RISK (drawdown proxy from S4 distance to 52w high + VIX)
+    if (s.S4 && s.S4.pct_from_52w_high != null){
+      const pct = s.S4.pct_from_52w_high;
+      const cls = pct > -10 ? 'strong' : pct > -25 ? 'moderate' : 'weak';
+      cells.push({k:'RISK (DRAWDOWN)', v:`${fmtPct(pct,0)} off high`, cls, detail:`Currently ${fmtPct(pct,1)} from its 52-week high — a simple, transparent proxy for how much air is under the current price.`});
+    } else cells.push({k:'RISK (DRAWDOWN)', v:'No data', cls:'nodata', detail:'Not enough price history yet.'});
+    return cells;
+  }
+
+  async function renderCompany(rawTicker){
+    if (!rawTicker){ go('#/'); return; }
+    let ticker = rawTicker.toUpperCase();
+    if (!ticker.endsWith('.NS')) ticker += '.NS';
+    $view.innerHTML = `<div class="skeleton" style="padding:120px 0">Loading ${esc(ticker.replace('.NS',''))}…<br><span style="font-size:11px">Checking cache; live analysis can take up to ~20s for a fresh stock.</span></div>`;
+
+    let stock, chart, fund;
+    try{
+      const [sr, cr, fr] = await Promise.all([
         fetch(`${API}/api/stock/${encodeURIComponent(ticker)}`),
-        fetch(`${API}/api/stock/${encodeURIComponent(ticker)}/chart`).catch(() => null),
+        fetch(`${API}/api/stock/${encodeURIComponent(ticker)}/chart`).catch(()=>null),
+        fetch(`${API}/api/stock/${encodeURIComponent(ticker)}/fundamentals`).catch(()=>null),
       ]);
-      if (resp.status === 404){
-        showError(ticker, `Yahoo Finance has no data for "${ticker.replace('.NS','')}" — check it's a real, currently-listed NSE symbol.`);
+      if (sr.status === 404){
+        $view.innerHTML = `<div class="not-found"><p>Couldn't find "<b>${esc(ticker.replace('.NS',''))}</b>" on the NSE.</p><p style="margin-top:8px">Check the symbol and try again from the <a href="#/" style="color:var(--accent-text)">home search</a>.</p></div>`;
         return;
       }
-      if (!resp.ok) throw new Error(`server returned ${resp.status}`);
-      result = await resp.json();
-      if (chartResp && chartResp.ok) chart = await chartResp.json();
-    } catch (e) {
-      showError(ticker, `Couldn't reach the backend to analyze "${ticker.replace('.NS','')}" (${e.message}). Try again in a moment.`);
+      if (!sr.ok) throw new Error('server error ' + sr.status);
+      stock = await sr.json();
+      if (cr && cr.ok) chart = await cr.json();
+      if (fr && fr.ok) fund = await fr.json();
+    }catch(e){
+      $view.innerHTML = `<div class="not-found"><p>Couldn't reach the backend to analyze "${esc(ticker.replace('.NS',''))}".</p><p style="margin-top:8px">${esc(e.message)}</p></div>`;
       return;
     }
 
-    notFoundEl.hidden = true;
-    const stockEntry = result.strategies;
-    const isLive = !!result.live;
-    const name = result.name || ticker.replace('.NS','');
-    const states = Object.fromEntries(STRATEGY_ORDER.map(k => [k, stateFor(k, stockEntry[k])]));
-    const buyCount = STRATEGY_ORDER.filter(k => states[k].signal === 'buy').length;
-    const avoidCount = STRATEGY_ORDER.filter(k => states[k].signal === 'avoid').length;
-    const rated = buyCount + avoidCount;
+    const name = stock.name || ticker.replace('.NS','');
+    const isLive = !!stock.live;
+    const price = chart ? chart.close[chart.close.length-1] : null;
+    const matrix = buildMatrix(stock, fund);
 
-    let verdict, verdictColor;
-    if (rated === 0){ verdict = 'No usable data'; verdictColor = 'var(--muted)'; }
-    else if (buyCount > avoidCount){ verdict = 'Majority signal: BUY / HOLD'; verdictColor = 'var(--pos)'; }
-    else if (avoidCount > buyCount){ verdict = 'Majority signal: AVOID / SELL'; verdictColor = 'var(--neg)'; }
-    else { verdict = 'Split — no majority'; verdictColor = 'var(--accent-text)'; }
+    $view.innerHTML = `
+      <div class="co-head">
+        <div class="row1"><h1>${esc(name)}</h1><span class="tkr">${esc(ticker.replace('.NS',''))}</span>${isLive ? '<span class="chip warn">Freshly analyzed, live</span>' : '<span class="chip good">Cached, refreshed every 4 days</span>'}</div>
+        <div class="price-row">
+          ${price!=null ? `<span class="price">₹${fmtNum(price,2)}</span>` : ''}
+          <span class="chg" style="color:var(--muted)">as of ${stock.as_of}</span>
+        </div>
+        <div class="mode-toggle" id="mode-toggle">
+          <button data-mode="long" class="active">LONG TERM</button>
+          <button data-mode="swing">SWING</button>
+        </div>
+      </div>
 
-    const dotsHtml = STRATEGY_ORDER.map(k => {
-      const st = states[k];
-      const bg = st.signal === 'buy' ? `var(--${k.toLowerCase()})` : (st.signal === 'avoid' ? 'var(--neg)' : 'var(--surface-2)');
-      const fg = st.signal ? 'var(--surface)' : 'var(--muted)';
-      return `<span style="background:${bg}; color:${fg}; ${!st.signal ? 'border:1px solid var(--border)' : ''}">${k}</span>`;
-    }).join('');
+      <div class="section" id="sec-snapshot">
+        <div class="section-head"><h2>Investment Research Snapshot</h2><span class="hint">Click any cell for the underlying numbers</span></div>
+        <div class="matrix" id="matrix-grid"></div>
+        <div class="matrix-detail" id="matrix-detail" hidden></div>
+      </div>
 
-    resultsEl.innerHTML = `
-      <div class="stock-head">
-        <div class="name">${name}</div>
-        <div class="tkr">${ticker.replace('.NS','')}</div>
-        ${isExample ? '<div class="example-flag">Showing as an example — search above for any stock</div>' : ''}
-        ${(!isExample && isLive) ? '<div class="example-flag">Freshly analyzed just now — not from the pre-built database</div>' : ''}
+      <div class="section" id="sec-chart">
+        <div class="section-head"><h2>Price &amp; Trend</h2><span class="hint">Live</span></div>
+        <div class="chart-wrap"><svg id="price-chart" viewBox="0 0 680 220" preserveAspectRatio="none"></svg><div class="chart-caption" id="chart-caption">Loading…</div></div>
       </div>
-      <div class="chart-wrap">
-        <svg id="price-chart" viewBox="0 0 680 220" preserveAspectRatio="none"></svg>
-        <div class="chart-caption" id="chart-caption">Loading price chart…</div>
+
+      <div class="section" id="sec-fundamentals"><div class="skeleton">Loading fundamentals…</div></div>
+      <div class="section" id="sec-valuation"></div>
+
+      <div class="section" id="sec-technical">
+        <div class="section-head"><h2>Market Behaviour <span style="color:var(--muted);font-weight:400;font-size:13px">— the 5 rules</span></h2><span class="hint">Existing strategy engine, unchanged</span></div>
+        <div class="strat-cards">${STRATEGY_ORDER.map(k => strategyCard(k, stock.strategies[k], isLive)).join('')}</div>
       </div>
-      <div class="tally">
-        <div class="big" style="color:${verdictColor}">${verdict}</div>
-        <div class="lbl">${buyCount} of ${rated || 5} rated strategies say buy/hold${avoidCount ? `, ${avoidCount} say avoid/sell` : ''}</div>
-        <div class="dots">${dotsHtml}</div>
+
+      <div class="section" id="sec-thesis">
+        <div class="section-head"><h2>My Investment Thesis</h2><span class="hint">Saved locally in your browser</span></div>
+        <div class="panel pad-lg">
+          <div class="thesis-grid" id="thesis-grid"></div>
+          <div class="save-hint" id="thesis-save-hint">Saved automatically as you type.</div>
+        </div>
       </div>
-      <div class="as-of-note">Monthly-rebalance strategies (S2, S4) reflect the last month-end decision · quarterly (S3, S5) reflect the last quarter-end · S1 is checked daily. Data as of ${result.as_of}.</div>
-      <div class="cards">${STRATEGY_ORDER.map(k => cardFor(k, stockEntry[k], isLive)).join('')}</div>
     `;
-    renderChart(chart);
-    window.scrollTo({top: resultsEl.offsetTop - 20, behavior: 'smooth'});
+
+    renderPriceChart(chart);
+    buildMatrixGrid(matrix);
+    renderFundamentalsSection(fund);
+    renderValuationSection(fund);
+    wireModeToggle();
+    wireThesis(ticker);
   }
 
-  // ---------- initial state: show a real example ----------
-  showStock('RELIANCE.NS', true);
+  function buildMatrixGrid(cells){
+    const grid = document.getElementById('matrix-grid');
+    const detail = document.getElementById('matrix-detail');
+    grid.innerHTML = cells.map((c,i) => `<div class="cell ${c.cls}" data-i="${i}"><div class="k">${c.k}</div><div class="v">${esc(c.v)}</div></div>`).join('');
+    grid.querySelectorAll('.cell').forEach(el => el.addEventListener('click', () => {
+      const c = cells[el.dataset.i];
+      detail.hidden = false;
+      detail.innerHTML = `<b>${c.k}</b> — ${esc(c.detail)}`;
+    }));
+  }
+
+  function renderFundamentalsSection(fund){
+    const el = document.getElementById('sec-fundamentals');
+    if (!fund || !fund.available){
+      el.innerHTML = `<div class="section-head"><h2>Fundamental Analysis</h2></div><div class="panel"><p class="empty-note">${esc(fund && fund.reason ? fund.reason : 'Fundamentals unavailable for this company.')}</p></div>`;
+      return;
+    }
+    const years = fund.years;
+    const last = arr => { const v = arr.filter(x=>x!=null); return v.length ? v[v.length-1] : null; };
+    el.innerHTML = `
+      <div class="section-head"><h2>Fundamental Analysis</h2><span class="hint">Source: screener.in annual reports · FY${years[0]}–FY${years[years.length-1]}</span></div>
+      <div class="grid cols-4" style="margin-bottom:14px">
+        <div class="fund-metric"><div class="k">Revenue (FY${years[years.length-1]})</div><div class="v">₹${fmtNum(last(fund.revenue_cr),0)} Cr</div><div class="src">CAGR ${fund.revenue_cagr_pct!=null?fund.revenue_cagr_pct+'%':'—'}</div></div>
+        <div class="fund-metric"><div class="k">PAT (FY${years[years.length-1]})</div><div class="v">₹${fmtNum(last(fund.pat_cr),0)} Cr</div><div class="src">CAGR ${fund.pat_cagr_pct!=null?fund.pat_cagr_pct+'%':'—'}</div></div>
+        <div class="fund-metric"><div class="k">ROCE (latest)</div><div class="v">${last(fund.roce_pct)!=null?last(fund.roce_pct)+'%':'—'}</div><div class="src">screener.in figure</div></div>
+        <div class="fund-metric"><div class="k">Dividend yield (TTM)</div><div class="v">${fund.dividend_yield_ttm_pct!=null?fund.dividend_yield_ttm_pct+'%':'—'}</div><div class="src">from actual dividends paid</div></div>
+      </div>
+      <div class="grid cols-3">
+        <div class="panel"><div class="eyebrow" style="margin-bottom:6px">Revenue (₹ Cr)</div><div id="spark-rev"></div></div>
+        <div class="panel"><div class="eyebrow" style="margin-bottom:6px">PAT (₹ Cr)</div><div id="spark-pat"></div></div>
+        <div class="panel"><div class="eyebrow" style="margin-bottom:6px">EBITDA margin %</div><div id="spark-margin"></div></div>
+        <div class="panel"><div class="eyebrow" style="margin-bottom:6px">ROCE %</div><div id="spark-roce"></div></div>
+        <div class="panel"><div class="eyebrow" style="margin-bottom:6px">Free cash flow (₹ Cr)</div><div id="spark-fcf"></div></div>
+        <div class="panel"><div class="eyebrow" style="margin-bottom:6px">Debt / Equity</div><div id="spark-de"></div></div>
+      </div>
+      ${fund.observations && fund.observations.length ? `<div class="panel" style="margin-top:14px"><div class="eyebrow" style="margin-bottom:10px">What the numbers show</div><div class="obs-list">${fund.observations.map(o=>`<div class="o">${esc(o)}</div>`).join('')}</div></div>` : ''}
+    `;
+    sparkline('spark-rev', fund.revenue_cr, 'var(--s1)');
+    sparkline('spark-pat', fund.pat_cr, 'var(--s3)');
+    sparkline('spark-margin', fund.ebitda_margin_pct, 'var(--s4)');
+    sparkline('spark-roce', fund.roce_pct, 'var(--pos)');
+    sparkline('spark-fcf', fund.free_cash_flow_cr, 'var(--s2)');
+    sparkline('spark-de', fund.debt_to_equity, 'var(--neg)');
+  }
+
+  function renderValuationSection(fund){
+    const el = document.getElementById('sec-valuation');
+    if (!fund || !fund.available || !fund.valuation || !fund.valuation.current){
+      el.innerHTML = `<div class="section-head"><h2>Valuation</h2></div><div class="panel"><p class="empty-note">Valuation unavailable — no positive earnings or no fundamentals data for this company.</p></div>`;
+      return;
+    }
+    const v = fund.valuation, cur = v.current;
+    const pe = cur.pe, med = v.own_5y_median_pe, umed = v.universe_median_pe;
+    let pct = 50;
+    if (pe != null && med != null){
+      const ratio = pe/med;
+      pct = Math.max(4, Math.min(96, 50 + (ratio-1)*80));
+    }
+    el.innerHTML = `
+      <div class="section-head"><h2>Valuation</h2><span class="hint">as of ${cur.as_of || '—'}</span></div>
+      <div class="grid cols-3" style="margin-bottom:14px">
+        <div class="fund-metric"><div class="k">P/E</div><div class="v">${pe!=null?pe+'x':'—'}</div><div class="src">5Y own median ${med!=null?med+'x':'—'}</div></div>
+        <div class="fund-metric"><div class="k">P/B</div><div class="v">${cur.pb!=null?cur.pb+'x':'—'}</div><div class="src">price / book equity</div></div>
+        <div class="fund-metric"><div class="k">EV / EBITDA</div><div class="v">${cur.ev_ebitda!=null?cur.ev_ebitda+'x':'—'}</div><div class="src">Nifty 500 median ${umed!=null?umed+'x':'—'}</div></div>
+      </div>
+      <div class="panel pad-lg">
+        <div class="eyebrow">Valuation context</div>
+        <div class="val-scale">
+          <div class="track"><div class="marker" style="left:${pct}%"></div></div>
+          <div class="labels"><span>Cheap</span><span>vs. own 5Y median</span><span>Expensive</span></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink-soft);margin-top:14px;line-height:1.6">
+          ${pe!=null && med!=null ? `Currently trading at <b>${pe}x</b> earnings, ${pe>med?'above':'below'} its own 5-year median of <b>${med}x</b>${umed!=null?` (Nifty 500 universe median: ${umed}x)`:''}.` : 'Not enough data to place this on a valuation scale.'}
+          This is a methodology, not a verdict — "cheap" here means cheap only relative to its own history.
+        </p>
+      </div>
+      ${v.pe_history && v.pe_history.length >= 3 ? `<div class="panel" style="margin-top:14px"><div class="eyebrow" style="margin-bottom:6px">P/E over time (annual, at each reporting date)</div><div id="spark-pe"></div></div>` : ''}
+    `;
+    if (v.pe_history && v.pe_history.length >= 3) sparkline('spark-pe', v.pe_history.map(p=>p.pe), 'var(--accent)');
+  }
+
+  function wireModeToggle(){
+    const toggle = document.getElementById('mode-toggle');
+    const fundSec = document.getElementById('sec-fundamentals'), valSec = document.getElementById('sec-valuation'), techSec = document.getElementById('sec-technical'), chartSec = document.getElementById('sec-chart');
+    toggle.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+      toggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.dataset.mode;
+      if (mode === 'long'){
+        [fundSec, valSec].forEach(s=>s.style.order=''); techSec.style.opacity='1';
+        $view.insertBefore(fundSec, document.getElementById('sec-thesis'));
+        $view.insertBefore(valSec, document.getElementById('sec-thesis'));
+        $view.insertBefore(techSec, document.getElementById('sec-thesis'));
+      } else {
+        $view.insertBefore(techSec, chartSec.nextSibling);
+        $view.insertBefore(fundSec, document.getElementById('sec-thesis'));
+        $view.insertBefore(valSec, document.getElementById('sec-thesis'));
+      }
+    }));
+  }
+
+  function wireThesis(ticker){
+    const FIELDS = [
+      ['why','WHY THIS BUSINESS?'], ['changing','WHAT IS CHANGING?'], ['growth','GROWTH DRIVERS'],
+      ['moat','COMPETITIVE ADVANTAGE'], ['valuation','VALUATION'], ['risks','KEY RISKS'],
+      ['wrong','WHAT WOULD MAKE ME WRONG?'], ['watch','WHAT I NEED TO WATCH'], ['catalysts','CATALYSTS'], ['horizon','TIME HORIZON'],
+    ];
+    const key = 'swinglab_thesis_' + ticker;
+    let saved = {};
+    try{ saved = JSON.parse(localStorage.getItem(key) || '{}'); }catch(e){}
+    const grid = document.getElementById('thesis-grid');
+    grid.innerHTML = FIELDS.map(([id,label]) => `<div class="thesis-field"><label>${label}</label><textarea data-id="${id}" placeholder="Write your notes…">${esc(saved[id]||'')}</textarea></div>`).join('');
+    grid.querySelectorAll('textarea').forEach(ta => ta.addEventListener('input', () => {
+      saved[ta.dataset.id] = ta.value;
+      localStorage.setItem(key, JSON.stringify(saved));
+      const hint = document.getElementById('thesis-save-hint');
+      hint.textContent = 'Saved just now.';
+    }));
+  }
+
+  /* ================================================================
+     STRATEGY LAB
+  ================================================================ */
+  function lineChart(id, dates, seriesMap, order, colorFor, opts){
+    opts = opts || {};
+    const el = document.getElementById(id);
+    const W=680,H=300,padL=54,padR=12,padT=14,padB=24;
+    const plotW=W-padL-padR, plotH=H-padT-padB;
+    const allVals = order.flatMap(k => (seriesMap[k]||[]).filter(v=>v!=null));
+    if (!allVals.length){ el.innerHTML='<p class="empty-note">No data.</p>'; return; }
+    let yMin=Math.min(...allVals), yMax=Math.max(...allVals);
+    let toY;
+    if (opts.log){
+      yMin = Math.max(yMin, 1e-6);
+      const ly0=Math.log(yMin), ly1=Math.log(yMax); const pad=(ly1-ly0)*0.06||0.05;
+      toY = v => padT + (1-(Math.log(Math.max(v,1e-6))-(ly0-pad))/((ly1+pad)-(ly0-pad)))*plotH;
+    } else {
+      const pad=(yMax-yMin)*0.08||1; const y0=yMin-pad, y1=yMax+pad;
+      toY = v => padT + (1-(v-y0)/(y1-y0))*plotH;
+    }
+    const n = dates.length;
+    const toX = i => padL + (i/(n-1))*plotW;
+    const lines = order.map(k => {
+      const vals = seriesMap[k]||[];
+      let segs=[], cur=[];
+      vals.forEach((v,i) => { if (v==null){ if(cur.length>1) segs.push(cur); cur=[]; return;} cur.push(`${toX(i).toFixed(1)},${toY(v).toFixed(1)}`); });
+      if (cur.length>1) segs.push(cur);
+      return segs.map(seg => `<polyline points="${seg.join(' ')}" fill="none" style="stroke:${colorFor(k)}" stroke-width="2"/>`).join('');
+    }).join('');
+    const yTop = opts.log ? Math.exp(Math.log(yMax)+ (Math.log(yMax)-Math.log(yMin))*0.06) : yMax + (yMax-yMin)*0.08;
+    const yBot = opts.log ? Math.exp(Math.log(yMin) - (Math.log(yMax)-Math.log(yMin))*0.06) : yMin - (yMax-yMin)*0.08;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible">
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+plotH}" style="stroke:var(--border)"/>
+      <line x1="${padL}" y1="${padT+plotH}" x2="${padL+plotW}" y2="${padT+plotH}" style="stroke:var(--border)"/>
+      <text x="${padL-6}" y="${padT+4}" text-anchor="end" font-size="10" font-family="var(--mono)" style="fill:var(--muted)">${opts.fmt ? opts.fmt(yTop) : yTop.toFixed(1)}</text>
+      <text x="${padL-6}" y="${padT+plotH}" text-anchor="end" font-size="10" font-family="var(--mono)" style="fill:var(--muted)">${opts.fmt ? opts.fmt(yBot) : yBot.toFixed(1)}</text>
+      <text x="${padL}" y="${H-4}" text-anchor="start" font-size="10" font-family="var(--mono)" style="fill:var(--muted)">${dates[0]}</text>
+      <text x="${padL+plotW}" y="${H-4}" text-anchor="end" font-size="10" font-family="var(--mono)" style="fill:var(--muted)">${dates[n-1]}</text>
+      ${lines}
+    </svg>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;justify-content:center">
+      ${order.map(k => `<span style="font-family:var(--mono);font-size:10.5px;color:var(--ink-soft)"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${colorFor(k)};margin-right:5px"></span>${esc(k)}</span>`).join('')}
+    </div>`;
+  }
+
+  async function renderStrategyLab(){
+    $view.innerHTML = `
+      <div class="hero" style="padding:44px 0 6px"><div class="eyebrow">Quantitative Research</div><h1 style="font-size:clamp(26px,5vw,38px)">Strategy Lab</h1>
+      <p class="sub" style="margin-top:10px">Returns are only one part of the story. Every strategy below is judged on drawdown, volatility and turnover too — not just CAGR.</p></div>
+      <div class="section" id="lab-body"><div class="skeleton">Loading backtest data…</div></div>
+    `;
+    let data;
+    try{ data = await (await fetch(`${API}/api/strategy-lab`)).json(); }
+    catch(e){ document.getElementById('lab-body').innerHTML = '<p class="empty-note">Strategy Lab data unavailable.</p>'; return; }
+
+    const COLORS = { 'Buy & Hold (Nifty 500)':'var(--muted)', 'Nifty 50':'var(--ink-soft)', 'S1: Long-Term Trend':'var(--s1)', 'S2: Momentum':'var(--s2)', 'S3: Value':'var(--s3)', 'S4: Price Strength':'var(--s4)', 'S5: Quality':'var(--s5)' };
+    const colorFor = k => COLORS[k] || 'var(--ink)';
+
+    document.getElementById('lab-body').innerHTML = `
+      <div class="section-head"><h2>Comparison table</h2><span class="hint">Nifty 500 backtest, 2010–2026</span></div>
+      <div class="panel table-scroll">
+        <table class="comp-table">
+          <thead><tr><th>Strategy</th><th>CAGR</th><th>Vol</th><th>Sharpe</th><th>Sortino</th><th>Max DD</th><th>Calmar</th><th>Win rate</th><th>Trades</th><th>Avg hold (d)</th><th>Turnover/yr</th></tr></thead>
+          <tbody>${data.order.map(k => { const r = data.comparison[k]; return `<tr>
+            <td style="text-align:left"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${colorFor(k)};margin-right:6px"></span>${esc(k)}</td>
+            <td>${r.cagr_pct!=null?r.cagr_pct+'%':'—'}</td><td>${r.vol_pct!=null?r.vol_pct+'%':'—'}</td><td>${r.sharpe??'—'}</td><td>${r.sortino??'—'}</td>
+            <td style="color:var(--neg)">${r.max_drawdown_pct!=null?r.max_drawdown_pct+'%':'—'}</td><td>${r.calmar??'—'}</td>
+            <td>${r.win_rate_pct!=null?r.win_rate_pct+'%':'—'}</td><td>${r.num_trades??'—'}</td><td>${r.avg_holding_period_days??'—'}</td><td>${r.avg_annual_turnover_pct!=null?r.avg_annual_turnover_pct+'%':'—'}</td>
+          </tr>`; }).join('')}</tbody>
+        </table>
+      </div>
+
+      <div class="section-head" style="margin-top:36px"><h2>Growth of ₹1</h2></div>
+      <div class="panel" id="chart-growth"></div>
+
+      <div class="section-head" style="margin-top:36px"><h2>Drawdown</h2></div>
+      <div class="panel" id="chart-dd"></div>
+
+      <div class="section-head" style="margin-top:36px"><h2>Rolling 252-day Sharpe</h2></div>
+      <div class="panel" id="chart-sharpe"></div>
+
+      <div class="section-head" style="margin-top:36px"><h2>Calendar-year returns</h2></div>
+      <div class="panel table-scroll" id="chart-annual"></div>
+
+      <div class="section-head" style="margin-top:36px"><h2>Turnover</h2><span class="hint">From the original research run — not yet an interactive series</span></div>
+      <div class="perf-card"><img src="/assets/charts/turnover.png" alt="Portfolio turnover by strategy" loading="lazy"></div>
+    `;
+
+    lineChart('chart-growth', data.dates, data.growth_of_rupee, data.order, colorFor, {log:true, fmt:v=>'₹'+v.toFixed(1)});
+    lineChart('chart-dd', data.drawdown_dates, data.drawdown_pct, data.order, colorFor, {fmt:v=>v.toFixed(0)+'%'});
+    lineChart('chart-sharpe', data.rolling_sharpe_dates, data.rolling_sharpe, data.order, colorFor, {fmt:v=>v.toFixed(1)});
+
+    const annualEl = document.getElementById('chart-annual');
+    annualEl.innerHTML = `<table class="comp-table"><thead><tr><th>Year</th>${data.order.map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>
+      ${data.annual_years.map((y,i) => `<tr><td style="text-align:left">${y}</td>${data.order.map(k => { const v=(data.annual_returns_pct[k]||[])[i]; return `<td style="color:${v>=0?'var(--pos)':'var(--neg)'}">${v!=null?v+'%':'—'}</td>`; }).join('')}</tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  /* ================================================================
+     WATCHLIST (localStorage)
+  ================================================================ */
+  const WL_KEY = 'swinglab_watchlist';
+  function getWatchlist(){ try{ return JSON.parse(localStorage.getItem(WL_KEY) || '[]'); }catch(e){ return []; } }
+  function setWatchlist(list){ localStorage.setItem(WL_KEY, JSON.stringify(list)); }
+
+  async function renderWatchlist(){
+    const list = getWatchlist();
+    $view.innerHTML = `
+      <div class="hero" style="padding:44px 0 6px"><div class="eyebrow">Tracking</div><h1 style="font-size:clamp(26px,5vw,38px)">My Watchlist</h1>
+      <p class="sub" style="margin-top:10px">Saved in this browser only. Add a company by ticker.</p></div>
+      <div class="section">
+        <div class="add-row"><input id="wl-add-input" placeholder="e.g. TCS, RELIANCE, TRENT…"><button class="btn primary" id="wl-add-btn">Add</button></div>
+        <div class="panel" id="wl-list">${list.length ? '<div class="skeleton">Loading watchlist…</div>' : '<p class="empty-note">Nothing here yet — add a company above or from any company page.</p>'}</div>
+      </div>
+    `;
+    document.getElementById('wl-add-btn').addEventListener('click', addFromInput);
+    document.getElementById('wl-add-input').addEventListener('keydown', e => { if (e.key==='Enter') addFromInput(); });
+    function addFromInput(){
+      const input = document.getElementById('wl-add-input');
+      let t = input.value.trim().toUpperCase();
+      if (!t) return;
+      if (!t.endsWith('.NS')) t += '.NS';
+      const cur = getWatchlist();
+      if (!cur.includes(t)){ cur.push(t); setWatchlist(cur); }
+      input.value='';
+      renderWatchlist();
+    }
+    if (!list.length) return;
+    const rowsHtml = await Promise.all(list.map(async t => {
+      try{
+        const r = await fetch(`${API}/api/stock/${encodeURIComponent(t)}`);
+        if (!r.ok) throw 0;
+        const d = await r.json();
+        const buy = STRATEGY_ORDER.filter(k => stateFor(k, d.strategies[k]).signal==='buy').length;
+        return `<div class="wl-row" data-t="${t}">
+          <div class="nm"><span class="t">${esc(t.replace('.NS',''))}</span><br><span class="n">${esc(d.name||'')}</span></div>
+          <div class="num">${buy}/5 active</div>
+          <div class="num" style="color:var(--muted)">as of ${d.as_of}</div>
+          <div><button class="btn" data-rm="${t}">Remove</button></div>
+        </div>`;
+      }catch(e){
+        return `<div class="wl-row" data-t="${t}"><div class="nm"><span class="t">${esc(t.replace('.NS',''))}</span></div><div class="empty-note">Couldn't load</div><div></div><div><button class="btn" data-rm="${t}">Remove</button></div></div>`;
+      }
+    }));
+    document.getElementById('wl-list').innerHTML = rowsHtml.join('');
+    document.querySelectorAll('.wl-row .t').forEach(el => el.addEventListener('click', () => go('#/company/'+el.closest('.wl-row').dataset.t)));
+    document.querySelectorAll('[data-rm]').forEach(btn => btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setWatchlist(getWatchlist().filter(t => t !== btn.dataset.rm));
+      renderWatchlist();
+    }));
+  }
+
+  /* ================================================================
+     DAILY JOURNAL (localStorage)
+  ================================================================ */
+  function journalKey(dateStr){ return 'swinglab_journal_' + dateStr; }
+  function todayStr(offsetDays){
+    const d = new Date(); d.setDate(d.getDate() + (offsetDays||0));
+    return d.toISOString().slice(0,10);
+  }
+  let journalCurrentDate = todayStr(0);
+
+  async function renderJournal(){
+    const entry = loadJournalEntry(journalCurrentDate);
+    $view.innerHTML = `
+      <div class="hero" style="padding:44px 0 6px"><div class="eyebrow">Research Log</div><h1 style="font-size:clamp(26px,5vw,38px)">Daily Research Journal</h1>
+      <p class="sub" style="margin-top:10px">Saved locally, one entry per day.</p></div>
+      <div class="section">
+        <div class="panel pad-lg">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div class="journal-date" id="j-date"></div>
+            <div class="journal-nav">
+              <button class="btn" id="j-prev">← Prev</button>
+              <button class="btn" id="j-today">Today</button>
+              <button class="btn" id="j-next">Next →</button>
+            </div>
+          </div>
+
+          <div class="day-section">
+            <h3>Market</h3>
+            <div id="j-market" style="font-size:13px;color:var(--ink-soft)">Loading…</div>
+          </div>
+
+          <div class="day-section">
+            <h3>Companies reviewed today</h3>
+            <div id="j-reviewed"></div>
+            <div class="add-row" style="margin-top:8px;margin-bottom:0"><input id="j-add-co" placeholder="Add a ticker you researched today…"><button class="btn" id="j-add-co-btn">Add</button></div>
+          </div>
+
+          <div class="day-section">
+            <h3>Notes</h3>
+            <div class="notes-box"><textarea id="j-notes" placeholder="What did you notice today? What changed your mind?"></textarea></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('j-date').textContent = new Date(journalCurrentDate+'T00:00:00').toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}).toUpperCase();
+    document.getElementById('j-notes').value = entry.notes || '';
+    renderReviewed(entry);
+    document.getElementById('j-notes').addEventListener('input', e => { entry.notes = e.target.value; saveJournalEntry(journalCurrentDate, entry); });
+    document.getElementById('j-prev').addEventListener('click', () => { journalCurrentDate = shiftDate(journalCurrentDate,-1); renderJournal(); });
+    document.getElementById('j-next').addEventListener('click', () => { journalCurrentDate = shiftDate(journalCurrentDate,1); renderJournal(); });
+    document.getElementById('j-today').addEventListener('click', () => { journalCurrentDate = todayStr(0); renderJournal(); });
+    document.getElementById('j-add-co-btn').addEventListener('click', () => addReviewed(entry));
+    document.getElementById('j-add-co').addEventListener('keydown', e => { if (e.key==='Enter') addReviewed(entry); });
+
+    try{
+      const m = MARKET || await (await fetch(`${API}/api/market`)).json();
+      const b = m.breadth;
+      document.getElementById('j-market').innerHTML = `NIFTY 50 ${m.nifty50?fmtNum(m.nifty50.level,0)+' ('+fmtPct(m.nifty50.chg_pct)+')':'—'} ·
+        Regime: ${m.nifty50?m.nifty50.regime:'—'} · VIX ${m.vix?m.vix.level.toFixed(1):'—'} (${m.vix?m.vix.regime:'—'}) ·
+        Breadth: ${b?b.above_250dma+' up / '+b.below_250dma+' down':'—'}`;
+    }catch(e){ document.getElementById('j-market').textContent = 'Market data unavailable.'; }
+  }
+  function shiftDate(d, delta){ const dt = new Date(d+'T00:00:00'); dt.setDate(dt.getDate()+delta); return dt.toISOString().slice(0,10); }
+  function loadJournalEntry(dateStr){ try{ return JSON.parse(localStorage.getItem(journalKey(dateStr)) || '{}'); }catch(e){ return {}; } }
+  function saveJournalEntry(dateStr, entry){ localStorage.setItem(journalKey(dateStr), JSON.stringify(entry)); }
+  function renderReviewed(entry){
+    const list = entry.reviewed || [];
+    document.getElementById('j-reviewed').innerHTML = list.length ? list.map(t => `<span class="reviewed-chip">${esc(t)}<button data-t="${esc(t)}">✕</button></span>`).join('') : '<p class="empty-note">None yet.</p>';
+    document.querySelectorAll('#j-reviewed button').forEach(b => b.addEventListener('click', () => {
+      entry.reviewed = (entry.reviewed||[]).filter(t => t !== b.dataset.t);
+      saveJournalEntry(journalCurrentDate, entry);
+      renderReviewed(entry);
+    }));
+  }
+  function addReviewed(entry){
+    const input = document.getElementById('j-add-co');
+    const t = input.value.trim().toUpperCase();
+    if (!t) return;
+    entry.reviewed = entry.reviewed || [];
+    if (!entry.reviewed.includes(t)) entry.reviewed.push(t);
+    saveJournalEntry(journalCurrentDate, entry);
+    input.value='';
+    renderReviewed(entry);
+  }
+
+  /* ================================================================
+     JOURNEY
+  ================================================================ */
+  function renderJourney(){
+    const items = [
+      ['2026', 'Built the technical signal engine', 'Purged walk-forward validation, meta-labeling, and a portfolio simulator with real Indian transaction costs — the backtesting discipline everything else here is built on.'],
+      ['2026', 'Extended to 5 systematic strategies', 'Trend, momentum, value, price-strength and quality — each backtested across the Nifty 500 with real corporate-action adjustment, not just the 3 tickers the project started with.'],
+      ['2026', 'Found and fixed a real bug at scale', 'A transaction-cost wipeout only showed up once the universe grew from 50 to 500 stocks — fixed with sticky slot-filling, and documented rather than hidden.'],
+      ['2026', 'Added point-in-time fundamentals', 'Scraped and parsed real annual reports (revenue, profit, ROCE, free cash flow) with a 60-day reporting lag, so a backtest never uses a number before it was actually public.'],
+      ['2026', 'Shipped it as a live web app', 'FastAPI + SQLite, deployed on Render — any NSE stock, not just the pre-computed 500, analyzed on demand.'],
+      ['2026', 'Rebuilt it as a research lab', 'Fundamentals, valuation history, a long-term vs swing lens, a Strategy Lab, a watchlist and a daily journal — this page. The framework keeps growing as the questions I ask get better.'],
+    ];
+    $view.innerHTML = `
+      <div class="hero" style="padding:44px 0 6px"><div class="eyebrow">A Work In Progress</div><h1 style="font-size:clamp(26px,5vw,38px)">My Investing Journey</h1>
+      <p class="sub" style="margin-top:10px">This is a personal project, not a finished commercial product. It keeps changing as my own research process does.</p></div>
+      <div class="section">
+        <div class="timeline">${items.map(([yr,t,d]) => `<div class="tl-item"><div class="yr">${esc(yr)}</div><div class="t">${esc(t)}</div><div class="d">${esc(d)}</div></div>`).join('')}</div>
+      </div>
+    `;
+  }
+
+  /* ================================================================
+     METHODOLOGY
+  ================================================================ */
+  function renderMethodology(){
+    $view.innerHTML = `
+      <div class="hero" style="padding:44px 0 6px"><div class="eyebrow">Full Transparency</div><h1 style="font-size:clamp(26px,5vw,38px)">Methodology</h1></div>
+      <div class="section">
+        <div class="method-section">
+          <h3>Data sources</h3>
+          <ul>
+            <li><b>Prices, dividends, splits</b> — Yahoo Finance's public chart endpoint, fetched live.</li>
+            <li><b>Fundamentals</b> (revenue, profit, ROCE, free cash flow, debt) — scraped from screener.in's public per-company pages. This is not an official API; it's rate-limited and cached, but can break if screener changes its page layout.</li>
+            <li><b>Index &amp; market data</b> (Nifty 50, Nifty Midcap 50, India VIX) — same Yahoo endpoint, live.</li>
+          </ul>
+        </div>
+        <div class="method-section">
+          <h3>Point-in-time discipline</h3>
+          <p>A company's annual results are only treated as "known" 60 days after the fiscal year-end (SEBI's audited-results filing deadline). Backtests never use a number before it would actually have been public.</p>
+        </div>
+        <div class="method-section">
+          <h3>Known limitation: historical P/E and stock splits</h3>
+          <p>The valuation history chart divides today's split-adjusted price convention against each year's <i>as-reported</i> EPS. For a company with a stock split or bonus issue partway through its history, older P/E figures can look artificially low or high. Treat the historical P/E range as directional, not precise, for such companies.</p>
+        </div>
+        <div class="method-section">
+          <h3>Universe &amp; survivorship bias</h3>
+          <p>The Nifty 500 constituent list used is <i>today's</i> list, applied across the full backtest window — a company that was removed or delisted along the way is invisible to the backtest. This is a real, disclosed source of optimism in the historical results.</p>
+        </div>
+        <div class="method-section">
+          <h3>What's excluded, and why</h3>
+          <p>Banks and NBFCs are excluded from the value/quality strategies (S3, S5) and from company-level fundamentals entirely — they report Revenue/Financing-Profit instead of Sales/EBITDA, so ratios like EV/EBITDA don't mean the same thing for them. This isn't a bug to patch; it's a sector-specific screen this build doesn't implement.</p>
+        </div>
+        <div class="method-section">
+          <h3>Backtesting &amp; portfolio simulation</h3>
+          <p>Purged walk-forward validation, real Indian transaction costs and slippage, independent cash ledgers per strategy, and full trade-by-trade logging. Historical performance does not guarantee future performance — every number on this site is a backtest result or a live snapshot, never a prediction.</p>
+        </div>
+        <div class="method-section">
+          <h3>Limitations, stated plainly</h3>
+          <ul>
+            <li>Live analysis for a stock outside the pre-built 500 only computes <i>today's</i> signal for Strategies 2–5 — not a full historical trade log (that needs re-ranking the whole universe on every past date).</li>
+            <li>Fundamentals history runs to about 12 years (FY2015+), shorter than the 16-year price history.</li>
+            <li>"Sector median" valuation isn't implemented — the Nifty 500 universe median is shown instead, and labeled as such.</li>
+            <li>Everything on this site is a research output, not investment advice.</li>
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  boot();
+  setInterval(refreshMarketPill, 5*60*1000);
 })();
 </script>

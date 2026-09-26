@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 from .swinglab.data import DataFetchError, fetch_ohlcv_with_events
-from .swinglab.fundamentals import fetch_company_page, parse_fundamentals, ratios_asof
+from .swinglab.fundamentals import fetch_company_page, parse_fundamentals, ratios_asof, REPORTING_LAG_DAYS
 from .swinglab.portfolio_engine import PortfolioEngine
 from .swinglab.strategies import ma_trend
 from .swinglab.totalreturn import align_dividends, split_adjusted_close
@@ -251,4 +251,182 @@ def price_chart(ticker: str, max_points: int = 400) -> dict:
         "close": [round(float(signal_close.iloc[i]), 2) for i in sample_pos],
         "sma": [None if pd.isna(sma.iloc[i]) else round(float(sma.iloc[i]), 2) for i in sample_pos],
         "trades": trades,
+    }
+
+
+def _num(x) -> float | None:
+    if x is None:
+        return None
+    try:
+        f = float(x)
+    except (TypeError, ValueError):
+        return None
+    return None if pd.isna(f) else round(f, 2)
+
+
+def _cagr_pct(series: list[float | None]) -> float | None:
+    """CAGR between the first and last non-null, positive points in `series`,
+    treating each list position as one year apart (these are annual figures)."""
+    pts = [(i, v) for i, v in enumerate(series) if v is not None and v > 0]
+    if len(pts) < 2:
+        return None
+    (i0, v0), (i1, v1) = pts[0], pts[-1]
+    years = i1 - i0
+    if years <= 0:
+        return None
+    return round(((v1 / v0) ** (1.0 / years) - 1.0) * 100.0, 1)
+
+
+def fundamentals_detail(ticker: str) -> dict:
+    """Full historical annual fundamentals + a real-numbers-only valuation
+    history for one ticker. Returns available=False with a plain reason
+    when screener has no usable page (true for most banks/NBFCs, and for
+    very recent listings) — never a guessed number in that case."""
+    ticker = ticker.upper()
+    if not ticker.endswith(".NS"):
+        ticker = ticker + ".NS"
+    symbol = ticker.replace(".NS", "")
+
+    html = fetch_company_page(symbol, cache_dir=str(DATA_DIR / ".fundamentals_cache"))
+    if not html:
+        return {"ticker": ticker, "available": False,
+                "reason": "No public screener.in page found for this symbol."}
+    hist = parse_fundamentals(html, symbol)
+    if hist is None or not hist.dates:
+        return {"ticker": ticker, "available": False,
+                "reason": "Fundamentals page found but has no parseable annual report history yet — common for banks/NBFCs (different statement format) or a very recent listing."}
+
+    dates = hist.dates
+    years = [d.year for d in dates]
+    revenue = [_num(hist.revenue.get(d)) for d in dates]
+    ebitda = [_num(hist.operating_profit.get(d)) for d in dates]
+    pat = [_num(hist.net_profit.get(d)) for d in dates]
+    eps = [_num(hist.eps.get(d)) for d in dates]
+    fcf = [_num(hist.free_cash_flow.get(d)) for d in dates]
+    ocf = [_num(hist.operating_cash_flow.get(d)) for d in dates]
+    debt = [_num(hist.borrowings.get(d)) for d in dates]
+    interest = [_num(hist.interest.get(d)) for d in dates]
+    equity = [_num(hist.book_equity.get(d)) for d in dates]
+    roce = [_num(hist.roce_pct.get(d)) for d in dates]
+
+    def ratio(a, b, mult=1.0):
+        return None if a is None or b in (None, 0) else round(a / b * mult, 1)
+
+    ebitda_margin = [ratio(e, r, 100) for e, r in zip(ebitda, revenue)]
+    fcf_margin = [ratio(f, r, 100) for f, r in zip(fcf, revenue)]
+    roe = [ratio(n, eq, 100) for n, eq in zip(pat, equity)]
+    debt_to_equity = [ratio(d, eq) for d, eq in zip(debt, equity)]
+    interest_coverage = [ratio(e, i) for e, i in zip(ebitda, interest)]
+
+    # ---- valuation history: real trailing P/E at each reported period,
+    # using the price ~60 days after period-end (when results were actually public) ----
+    pe_history = []
+    last_price, last_date, current_ratios = None, None, None
+    dividends = pd.Series(dtype=float)
+    try:
+        ohlcv, dividends, splits = fetch_ohlcv_with_events(ticker, START, END)
+        signal_close = split_adjusted_close(ohlcv["Close"], splits)
+        last_price = float(signal_close.iloc[-1])
+        last_date = signal_close.index[-1]
+        price_naive = signal_close.copy()
+        price_naive.index = price_naive.index.tz_localize(None)
+        lag = pd.Timedelta(days=REPORTING_LAG_DAYS)
+        for d, e in zip(dates, eps):
+            if e is None or e <= 0:
+                continue
+            asof_date = d + lag
+            pos = price_naive.index.searchsorted(asof_date, side="right") - 1
+            if pos < 0:
+                continue
+            price_then = float(price_naive.iloc[pos])
+            pe_history.append({"period_end": str(d.date()), "pe": round(price_then / e, 1)})
+        current_ratios = ratios_asof(hist, last_date, last_price)
+    except DataFetchError:
+        pass
+
+    pe_vals_universe = list(_context.get("s3_pe", {}).values())
+    ev_vals_universe = list(_context.get("s3_ev_ebitda", {}).values())
+    universe_median_pe = round(float(np.median(pe_vals_universe)), 1) if pe_vals_universe else None
+    universe_median_ev_ebitda = round(float(np.median(ev_vals_universe)), 1) if ev_vals_universe else None
+    own_median_pe = round(float(np.median([p["pe"] for p in pe_history])), 1) if pe_history else None
+
+    div_yield_pct = None
+    if last_price and not dividends.empty:
+        cutoff = last_date - pd.DateOffset(years=1)
+        ttm_div = float(dividends[dividends.index >= cutoff].sum())
+        if last_price > 0:
+            div_yield_pct = round(ttm_div / last_price * 100, 2)
+
+    # ---- observations: each one only fires if the underlying numbers support it ----
+    obs = []
+    if len(revenue) >= 4 and all(v is not None for v in revenue[-4:]):
+        recent_cagr = _cagr_pct(revenue[-4:])
+        older_cagr = _cagr_pct(revenue[:-3]) if len(revenue) > 4 else None
+        if recent_cagr is not None and older_cagr is not None:
+            if recent_cagr > older_cagr + 3:
+                obs.append(f"Revenue growth has accelerated to {recent_cagr}% CAGR over the last 3 years, up from {older_cagr}% before that.")
+            elif recent_cagr < older_cagr - 3:
+                obs.append(f"Revenue growth has slowed to {recent_cagr}% CAGR over the last 3 years, down from {older_cagr}% before that.")
+    if len([v for v in roce if v is not None]) >= 3:
+        roce_pts = [v for v in roce if v is not None]
+        if roce_pts[-1] - roce_pts[0] >= 3:
+            obs.append(f"ROCE has expanded from {roce_pts[0]}% to {roce_pts[-1]}% over the available history.")
+        elif roce_pts[0] - roce_pts[-1] >= 3:
+            obs.append(f"ROCE has contracted from {roce_pts[0]}% to {roce_pts[-1]}% over the available history.")
+    fcf_pts = [v for v in fcf if v is not None]
+    if len(fcf_pts) >= 3:
+        neg_years = sum(1 for v in fcf_pts if v < 0)
+        if neg_years == 0:
+            obs.append(f"Free cash flow has been positive in all {len(fcf_pts)} reported years.")
+        else:
+            obs.append(f"Free cash flow was negative in {neg_years} of the last {len(fcf_pts)} reported years.")
+    margin_pts = [v for v in ebitda_margin if v is not None]
+    if len(margin_pts) >= 3 and abs(margin_pts[-1] - margin_pts[0]) >= 2:
+        direction = "expanded" if margin_pts[-1] > margin_pts[0] else "compressed"
+        obs.append(f"EBITDA margin has {direction} from {margin_pts[0]}% to {margin_pts[-1]}% over the available history.")
+    de_pts = [v for v in debt_to_equity if v is not None]
+    if len(de_pts) >= 3 and abs(de_pts[-1] - de_pts[0]) >= 0.15:
+        direction = "risen" if de_pts[-1] > de_pts[0] else "fallen"
+        obs.append(f"Debt-to-equity has {direction} from {de_pts[0]}x to {de_pts[-1]}x over the available history.")
+    if current_ratios and own_median_pe and not pd.isna(current_ratios.get("pe", float("nan"))):
+        cur_pe = round(current_ratios["pe"], 1)
+        gap = round((cur_pe / own_median_pe - 1) * 100)
+        if abs(gap) >= 10:
+            obs.append(f"Currently trading at {cur_pe}x earnings, {'above' if gap>0 else 'below'} its own {own_median_pe}x median by {abs(gap)}%.")
+
+    return {
+        "ticker": ticker,
+        "available": True,
+        "source": "screener.in (annual reports)",
+        "years": years,
+        "revenue_cr": revenue,
+        "revenue_cagr_pct": _cagr_pct(revenue),
+        "ebitda_cr": ebitda,
+        "ebitda_margin_pct": ebitda_margin,
+        "pat_cr": pat,
+        "pat_cagr_pct": _cagr_pct(pat),
+        "eps": eps,
+        "eps_cagr_pct": _cagr_pct(eps),
+        "roe_pct": roe,
+        "roce_pct": roce,
+        "free_cash_flow_cr": fcf,
+        "fcf_margin_pct": fcf_margin,
+        "operating_cash_flow_cr": ocf,
+        "debt_cr": debt,
+        "debt_to_equity": debt_to_equity,
+        "interest_coverage": interest_coverage,
+        "dividend_yield_ttm_pct": div_yield_pct,
+        "valuation": {
+            "current": current_ratios and {
+                "pe": _num(current_ratios.get("pe")),
+                "pb": _num(current_ratios.get("pb")),
+                "ev_ebitda": _num(current_ratios.get("ev_ebitda")),
+                "as_of": str(current_ratios["period_end"].date()) if current_ratios.get("period_end") is not None else None,
+            },
+            "own_5y_median_pe": own_median_pe,
+            "universe_median_pe": universe_median_pe,
+            "universe_median_ev_ebitda": universe_median_ev_ebitda,
+            "pe_history": pe_history,
+        },
+        "observations": obs,
     }
