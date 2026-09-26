@@ -287,6 +287,26 @@
   .demo-box{ margin-top:26px; padding-top:22px; border-top:1px dashed var(--border); }
   .demo-box p{ font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.5; }
   .demo-creds{ margin-top:10px; font-family:var(--mono); font-size:13px; text-align:center; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px; letter-spacing:.03em; }
+
+  /* ============ chat ============ */
+  .chat-fab{ position:fixed; right:22px; bottom:22px; z-index:50; font-family:var(--mono); font-size:12.5px; font-weight:600; padding:12px 18px; border-radius:100px; border:1px solid var(--border); background:var(--ink); color:var(--bg); cursor:pointer; box-shadow:var(--shadow); }
+  @media(prefers-color-scheme:dark){ :root:not([data-theme="light"]) .chat-fab{ background:var(--accent); color:#171208; border-color:var(--accent); } }
+  :root[data-theme="dark"] .chat-fab{ background:var(--accent); color:#171208; border-color:var(--accent); }
+  .chat-panel{ position:fixed; right:22px; bottom:22px; z-index:60; width:min(380px, calc(100vw - 44px)); height:min(520px, calc(100vh - 100px)); background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:0 30px 80px -20px rgba(0,0,0,.5); display:flex; flex-direction:column; overflow:hidden; }
+  .chat-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); font-family:var(--serif); font-weight:600; font-size:14px; }
+  .chat-head button{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; }
+  .chat-head button:hover{ color:var(--ink); }
+  .chat-messages{ flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+  .chat-msg{ font-size:13px; line-height:1.55; padding:9px 12px; border-radius:11px; max-width:88%; white-space:pre-wrap; }
+  .chat-msg.user{ align-self:flex-end; background:var(--ink); color:var(--bg); }
+  @media(prefers-color-scheme:dark){ :root:not([data-theme="light"]) .chat-msg.user{ background:var(--accent); color:#171208; } }
+  :root[data-theme="dark"] .chat-msg.user{ background:var(--accent); color:#171208; }
+  .chat-msg.model{ align-self:flex-start; background:var(--surface-2); color:var(--ink); border:1px solid var(--border); }
+  .chat-msg.model.thinking{ color:var(--muted); font-style:italic; }
+  .chat-input-row{ display:flex; gap:8px; padding:12px 14px; border-top:1px solid var(--border); }
+  .chat-input-row input{ flex:1; font-family:var(--sans); font-size:13px; padding:9px 11px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2); color:var(--ink); outline:none; }
+  .chat-input-row input:focus{ border-color:var(--accent); }
+  .chat-disclaimer{ font-size:10.5px; color:var(--muted); text-align:center; padding:0 14px 12px; font-family:var(--mono); }
 </style>
 
 <div class="topnav" id="topnav" hidden>
@@ -310,6 +330,20 @@
 
 <div id="login-root" hidden></div>
 <div id="cmdk-root"></div>
+
+<button class="chat-fab" id="chat-fab" hidden>Ask SwingLab</button>
+<div class="chat-panel" id="chat-panel" hidden>
+  <div class="chat-head">
+    <span>Ask SwingLab</span>
+    <button id="chat-close" aria-label="Close">✕</button>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-row">
+    <input id="chat-input" placeholder="Ask about this data…" autocomplete="off">
+    <button id="chat-send" class="btn primary">Send</button>
+  </div>
+  <div class="chat-disclaimer">Grounded in this page's real data only — not advice.</div>
+</div>
 <div class="wrap" id="view" hidden></div>
 <div class="wrap" id="footer-wrap" hidden><footer>SwingLab is a personal research project by Rishit — built to make my investing process more systematic.<br><a href="https://github.com/hasijarishit-tech/swinglab-signals" target="_blank" rel="noopener">github.com/hasijarishit-tech/swinglab-signals</a></footer></div>
 
@@ -331,6 +365,68 @@
     document.getElementById('topnav').hidden = false;
     document.getElementById('footer-wrap').hidden = false;
     $view.hidden = false;
+    document.getElementById('chat-fab').hidden = false;
+  }
+
+  /* ---------------- chat (Gemini, grounded in the current page's real data) ---------------- */
+  let CHAT_HISTORY = [], CHAT_CONTEXT = null;
+
+  function initChatWidget(){
+    document.getElementById('chat-fab').addEventListener('click', () => {
+      document.getElementById('chat-panel').hidden = false;
+      document.getElementById('chat-fab').hidden = true;
+      document.getElementById('chat-input').focus();
+    });
+    document.getElementById('chat-close').addEventListener('click', () => {
+      document.getElementById('chat-panel').hidden = true;
+      document.getElementById('chat-fab').hidden = false;
+    });
+    document.getElementById('chat-send').addEventListener('click', sendChatMessage);
+    document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
+  }
+
+  function resetChat(context){
+    CHAT_HISTORY = [];
+    CHAT_CONTEXT = context;
+    const el = document.getElementById('chat-messages');
+    if (el) el.innerHTML = '';
+  }
+
+  function setChatContext(context){ CHAT_CONTEXT = context; }
+
+  function appendChatMessage(role, text){
+    const el = document.getElementById('chat-messages');
+    if (!el) return;
+    const div = document.createElement('div');
+    div.className = 'chat-msg ' + role;
+    div.textContent = text;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+    return div;
+  }
+
+  async function sendChatMessage(){
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    appendChatMessage('user', msg);
+    CHAT_HISTORY.push({role: 'user', text: msg});
+    const thinking = appendChatMessage('model thinking', 'Thinking…');
+    try{
+      const r = await fetch(`${API}/api/chat`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: msg, context: CHAT_CONTEXT, history: CHAT_HISTORY.slice(-8)}),
+      });
+      thinking.remove();
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok){ appendChatMessage('model', d.detail || 'Something went wrong.'); return; }
+      appendChatMessage('model', d.reply);
+      CHAT_HISTORY.push({role: 'model', text: d.reply});
+    }catch(e){
+      thinking.remove();
+      appendChatMessage('model', "Couldn't reach the server. Try again in a moment.");
+    }
   }
 
   function renderUserChip(){
@@ -478,6 +574,7 @@
     document.querySelectorAll('nav.mainlinks a').forEach(a => a.classList.toggle('active', a.dataset.r === view || (view==='company' && a.dataset.r==='companies')));
     const fn = routes[view] || renderHome;
     window.scrollTo(0,0);
+    resetChat(view === 'company' ? null : {page: view || 'home'});
     fn(arg);
   }
   window.addEventListener('hashchange', router);
@@ -930,6 +1027,20 @@
     renderValuationSection(fund);
     wireModeToggle();
     wireThesis(ticker);
+
+    setChatContext({
+      page: 'company', ticker: ticker.replace('.NS', ''), name, price, as_of: stock.as_of,
+      snapshot_matrix: Object.fromEntries(matrix.map(c => [c.k, c.v])),
+      strategy_signals: Object.fromEntries(STRATEGY_ORDER.map(k => [STRATEGY_LABEL[k], stateFor(k, stock.strategies[k]).label])),
+      fundamentals_summary: (fund && fund.available) ? {
+        revenue_cagr_pct: fund.revenue_cagr_pct, pat_cagr_pct: fund.pat_cagr_pct,
+        latest_roce_pct: (fund.roce_pct || []).filter(v => v != null).slice(-1)[0] ?? null,
+        latest_debt_to_equity: (fund.debt_to_equity || []).filter(v => v != null).slice(-1)[0] ?? null,
+        dividend_yield_ttm_pct: fund.dividend_yield_ttm_pct,
+        observations: fund.observations,
+      } : null,
+      valuation_summary: (fund && fund.valuation) ? fund.valuation.current : null,
+    });
   }
 
   function buildMatrixGrid(cells){
@@ -1359,6 +1470,7 @@
     `;
   }
 
+  initChatWidget();
   boot();
   setInterval(refreshMarketPill, 5*60*1000);
 })();

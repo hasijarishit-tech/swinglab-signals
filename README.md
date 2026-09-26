@@ -53,6 +53,22 @@ own browser), just enough to keep the public URL from being wide open.
   it, a random key is generated per-process — secure, just less convenient
   on Render's free tier, which restarts often.
 
+## Chat assistant ("Ask SwingLab")
+
+A floating chat button (bottom-right, once signed in) answers questions
+about whatever real data is already on the page — it's given that data as
+context and instructed to only cite numbers from it, never invent one, and
+never give a direct buy/sell call. Backed by Google's Gemini API
+(`app/chat.py`).
+
+To turn it on, set `GEMINI_API_KEY` as an environment variable (Render →
+your service → **Environment** — never in `render.yaml` or any committed
+file, since this repo is public). Get a key at
+https://aistudio.google.com/apikey. Without it, the chat button still
+appears but replies with a plain "not set up yet" message instead of
+erroring. `GEMINI_MODEL` (default `gemini-2.0-flash`) is also
+env-overridable if that model name is ever retired.
+
 ## Is the data live?
 
 - **Any company you search**: fetched and scored from Yahoo (price) and

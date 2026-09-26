@@ -11,6 +11,7 @@ import json
 import threading
 import time
 from pathlib import Path
+from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from . import auth, db
+from . import auth, chat, db
 from .engine import TickerNotFound, analyze_ticker, price_chart, fundamentals_detail
 from .market import get_market_snapshot
 
@@ -177,6 +178,23 @@ def get_stock_chart(ticker: str, username: str = Depends(auth.require_login)):
         raise HTTPException(status_code=404, detail=f"No price data found for {ticker}.")
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Couldn't load a chart for {ticker} right now: {e}")
+
+
+class ChatBody(BaseModel):
+    message: str
+    context: Optional[dict] = None
+    history: Optional[list] = None
+
+
+@app.post("/api/chat")
+def chat_endpoint(body: ChatBody, username: str = Depends(auth.require_login)):
+    try:
+        reply = chat.ask(body.message, body.context, body.history)
+    except chat.ChatNotConfigured:
+        raise HTTPException(status_code=503, detail="Chat isn't set up on this server yet (missing GEMINI_API_KEY).")
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Chat request failed: {e}")
+    return {"reply": reply}
 
 
 # ---- static frontend ----
