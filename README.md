@@ -27,27 +27,36 @@ advice.
   original Nifty 500 backtest.
 - **Watchlist**, **Daily Research Journal** — saved in your browser
   (`localStorage`), no account needed.
-- **Investing Journey**, **Methodology** — the story so far, and a fully
-  transparent writeup of data sources, point-in-time discipline, and every
-  known limitation.
+- **Methodology** — a fully transparent writeup of data sources,
+  point-in-time discipline, and every known limitation.
 
 Command palette: `⌘K` or `/` anywhere on the site.
 
 ## Signing in
 
-The site sits behind a simple login (`app/auth.py`) — not a real multi-user
-system (there's no per-user data; watchlist/journal live in each visitor's
-own browser), just enough to keep the public URL from being wide open.
+The site sits behind a login (`app/auth.py`) — not a real multi-tenant
+product (there's no per-user server-side data; watchlist/journal live in
+each visitor's own browser), just enough to keep the public URL from being
+wide open, plus real self-service signup for anyone who wants their own.
 
+- **Sign up** — anyone can create a username/password on the login page
+  ("Create an account"). Passwords are hashed with a per-user random salt
+  (PBKDF2, 200,000 rounds) — never stored or logged in plaintext. **Real
+  limitation, stated plainly**: these accounts live in the same SQLite file
+  as the stock cache, which sits on Render's free-tier *ephemeral* disk —
+  wiped on redeploy and after a period of inactivity (see below). A
+  signed-up account can disappear when that happens. Fine for a session of
+  research; not yet durable across restarts. Fixed the same way the stock
+  cache's durability would be: add a persistent disk on Render's paid tier.
 - **Demo account** — `demo` / `demo1234`. Meant to be public; shown right on
   the login page, with a "Continue as demo" button.
-- **Your own login** — set `SWINGLAB_USERNAME` and `SWINGLAB_PASSWORD` as
+- **The owner login** — set `SWINGLAB_USERNAME` and `SWINGLAB_PASSWORD` as
   environment variables (Render → your service → **Environment**, not in
-  `render.yaml`, since that file is in this public repo). Without them, the
-  app generates a random password at startup and prints it once to the
-  server's own logs (Render → **Logs**) — safe, but you'll need to check the
-  logs again after every restart. Setting the env vars gives you a stable
-  login.
+  `render.yaml`, since that file is in this public repo). This is the one
+  login guaranteed to survive a restart, since it lives in Render's config,
+  not the wipeable disk. Without them, the app generates a random password
+  at startup and prints it once to the server's own logs (Render →
+  **Logs**).
 - Also set `SWINGLAB_SECRET_KEY` (any long random string) so login sessions
   survive a restart/redeploy instead of everyone being signed out. Without
   it, a random key is generated per-process — secure, just less convenient

@@ -1,10 +1,19 @@
-"""Minimal cookie-session login gate.
+"""Cookie-session login gate, with real signup.
 
-This isn't a real multi-user system — the app has no per-user data (the
-watchlist and journal live in each visitor's own browser via
-localStorage). Its only job is to keep the public URL from being wide
-open to anyone who stumbles on the link, while still letting people
-without the owner's password in via a labeled demo account.
+Two kinds of accounts:
+  - A fixed owner account + a public demo account (below), for anyone who
+    doesn't want to sign up.
+  - Self-service accounts created via signup(), stored in the same SQLite
+    file the stock cache uses (app/db.py) — real usernames/passwords,
+    hashed with a per-user salt, never stored or logged in plaintext.
+
+Durability note, stated plainly: on Render's free tier, that SQLite file
+lives on ephemeral disk and is wiped on redeploy or a period of inactivity
+(see README). A signed-up account can disappear when that happens. The
+owner account (SWINGLAB_USERNAME/SWINGLAB_PASSWORD as Render environment
+variables, not stored on disk) is the one login guaranteed to survive a
+restart — self-service signup is for convenience, not the durable option,
+unless a persistent disk is added (also in the README).
 
 Security note, stated plainly: this repo is public on GitHub. Any
 hardcoded fallback secret here would be visible to anyone reading the
@@ -28,14 +37,19 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import re
 import secrets
 import time
-from typing import Optional
+from typing import Optional, Tuple
 
 from fastapi import Cookie, HTTPException
 
+from . import db
+
 COOKIE_NAME = "swinglab_session"
 SESSION_MAX_AGE_SECONDS = 30 * 24 * 3600  # 30 days
+PBKDF2_ITERATIONS = 200_000
+USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{3,30}$")
 
 SECRET_KEY = os.environ.get("SWINGLAB_SECRET_KEY", "").encode() or secrets.token_bytes(32)
 
@@ -50,11 +64,40 @@ DEMO_USERNAME = "demo"
 DEMO_PASSWORD = "demo1234"
 
 _USERS = {OWNER_USERNAME: OWNER_PASSWORD, DEMO_USERNAME: DEMO_PASSWORD}
+_RESERVED_USERNAMES = {OWNER_USERNAME.lower(), DEMO_USERNAME.lower()}
+
+
+def _hash_password(password: str, salt: str) -> str:
+    return hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), PBKDF2_ITERATIONS).hex()
+
+
+def signup(username: str, password: str) -> Tuple[bool, str]:
+    """Creates a self-service account. Returns (ok, error_message) — the
+    message is empty on success."""
+    username = (username or "").strip()
+    if not USERNAME_RE.match(username):
+        return False, "Username must be 3-30 characters: letters, numbers, underscores only."
+    if username.lower() in _RESERVED_USERNAMES:
+        return False, "That username is reserved — try another."
+    if len(password) < 6:
+        return False, "Password must be at least 6 characters."
+    if db.get_user(username) is not None:
+        return False, "That username is already taken."
+    salt = secrets.token_hex(16)
+    ok = db.create_user(username, _hash_password(password, salt), salt)
+    if not ok:
+        return False, "That username is already taken."
+    return True, ""
 
 
 def check_credentials(username: str, password: str) -> bool:
     expected = _USERS.get(username)
-    return expected is not None and hmac.compare_digest(password, expected)
+    if expected is not None:
+        return hmac.compare_digest(password, expected)
+    user = db.get_user(username)
+    if user is None:
+        return False
+    return hmac.compare_digest(_hash_password(password, user["salt"]), user["password_hash"])
 
 
 def make_session_token(username: str) -> str:
@@ -72,7 +115,7 @@ def verify_session_token(token: str | None) -> str | None:
         return None
     if not ts.isdigit() or time.time() - int(ts) > SESSION_MAX_AGE_SECONDS:
         return None
-    if username not in _USERS:
+    if username not in _USERS and db.get_user(username) is None:
         return None
     return username
 

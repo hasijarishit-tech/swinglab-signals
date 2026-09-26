@@ -57,7 +57,11 @@
   nav.mainlinks a{ font-size:12.5px; font-family:var(--mono); color:var(--muted); text-decoration:none; padding:7px 11px; border-radius:7px; white-space:nowrap; transition:color .12s,background .12s; }
   nav.mainlinks a:hover{ color:var(--ink); background:var(--surface-2); }
   nav.mainlinks a.active{ color:var(--ink); background:var(--surface-2); }
-  .nav-right{ display:flex; align-items:center; gap:10px; margin-left:auto; }
+  .nav-right{ display:flex; align-items:center; gap:10px; margin-left:auto; flex-shrink:0; }
+  @media(max-width:600px){
+    .topnav-in{ flex-wrap:wrap; height:auto; padding:10px 20px; row-gap:8px; }
+    nav.mainlinks{ order:3; flex-basis:100%; }
+  }
   .searchbtn{ display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--muted); font-size:12px; font-family:var(--mono); cursor:pointer; }
   .searchbtn kbd{ font-family:var(--mono); background:var(--surface-2); border:1px solid var(--border); border-radius:4px; padding:0px 5px; font-size:10.5px; }
   .marketpill{ display:none; align-items:center; gap:6px; font-family:var(--mono); font-size:11.5px; padding:5px 10px; border-radius:100px; border:1px solid var(--border); background:var(--surface); color:var(--ink-soft); }
@@ -235,15 +239,6 @@
   .reviewed-chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11.5px; background:var(--surface-2); border:1px solid var(--border); padding:4px 10px; border-radius:100px; margin:0 6px 6px 0; }
   .reviewed-chip button{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; padding:0; }
 
-  /* ============ journey ============ */
-  .timeline{ position:relative; padding-left:26px; }
-  .timeline::before{ content:''; position:absolute; left:6px; top:6px; bottom:6px; width:1.5px; background:var(--border); }
-  .tl-item{ position:relative; padding-bottom:26px; }
-  .tl-item::before{ content:''; position:absolute; left:-26px; top:4px; width:9px; height:9px; border-radius:50%; background:var(--accent); }
-  .tl-item .yr{ font-family:var(--mono); font-size:11px; color:var(--muted); }
-  .tl-item .t{ font-family:var(--serif); font-weight:600; font-size:15px; margin-top:3px; }
-  .tl-item .d{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; line-height:1.55; }
-
   /* ============ methodology ============ */
   .method-section{ margin-top:28px; }
   .method-section h3{ font-size:14.5px; margin-bottom:8px; }
@@ -273,9 +268,10 @@
   .not-found p{ font-size:13.5px; color:var(--ink-soft); line-height:1.6; }
 
   /* ============ login ============ */
-  .user-chip{ display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11.5px; color:var(--muted); }
-  .user-chip button{ background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:2px 4px; line-height:1; }
-  .user-chip button:hover{ color:var(--ink); }
+  .user-chip{ display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11.5px; color:var(--muted); flex-shrink:0; }
+  .user-chip .uname{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; }
+  .user-chip button{ background:var(--surface); border:1px solid var(--border); color:var(--ink-soft); cursor:pointer; font-family:var(--mono); font-size:11px; padding:6px 11px; border-radius:7px; white-space:nowrap; }
+  .user-chip button:hover{ color:var(--neg); border-color:color-mix(in srgb, var(--neg) 45%, var(--border)); }
   .login-wrap{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
   .login-card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:34px 30px; box-shadow:var(--shadow); }
   .login-card .brand{ justify-content:center; font-size:17px; margin-bottom:4px; }
@@ -284,6 +280,9 @@
   .login-card input{ width:100%; font-family:var(--mono); font-size:14px; padding:11px 13px; border:1.5px solid var(--border); border-radius:9px; background:var(--surface-2); color:var(--ink); outline:none; }
   .login-card input:focus{ border-color:var(--accent); }
   .login-error{ margin-top:12px; font-size:12px; color:var(--neg); background:color-mix(in srgb, var(--neg) 12%, var(--surface)); border:1px solid color-mix(in srgb, var(--neg) 35%, var(--border)); border-radius:8px; padding:9px 11px; }
+  .login-switch{ text-align:center; font-size:12px; color:var(--muted); margin-top:16px; }
+  .login-switch a{ color:var(--accent-text); text-decoration:none; }
+  .login-switch a:hover{ text-decoration:underline; }
   .demo-box{ margin-top:26px; padding-top:22px; border-top:1px dashed var(--border); }
   .demo-box p{ font-size:12px; color:var(--ink-soft); margin-top:6px; line-height:1.5; }
   .demo-creds{ margin-top:10px; font-family:var(--mono); font-size:13px; text-align:center; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px; letter-spacing:.03em; }
@@ -317,7 +316,6 @@
       <a href="#/strategy-lab" data-r="strategy-lab">Strategy Lab</a>
       <a href="#/watchlist" data-r="watchlist">Watchlist</a>
       <a href="#/journal" data-r="journal">Journal</a>
-      <a href="#/journey" data-r="journey">Journey</a>
       <a href="#/methodology" data-r="methodology">Methodology</a>
     </nav>
     <div class="nav-right">
@@ -432,44 +430,84 @@
   function renderUserChip(){
     const el = document.getElementById('user-chip');
     el.hidden = false;
-    el.innerHTML = `<span>${esc(CURRENT_USER.username)}${CURRENT_USER.is_demo ? ' · demo' : ''}</span><button id="logout-btn" title="Sign out">⎋</button>`;
+    el.innerHTML = `<span class="uname">${esc(CURRENT_USER.username)}${CURRENT_USER.is_demo ? ' · demo' : ''}</span><button id="logout-btn">Sign out</button>`;
     document.getElementById('logout-btn').addEventListener('click', async () => {
       try{ await fetch(`${API}/api/logout`, {method:'POST'}); }catch(e){}
       location.reload();
     });
   }
 
-  function showLogin(){
+  function showLogin(mode){
+    mode = mode === 'signup' ? 'signup' : 'signin';
     document.getElementById('topnav').hidden = true;
     document.getElementById('footer-wrap').hidden = true;
     $view.hidden = true;
     const root = document.getElementById('login-root');
     root.hidden = false;
-    root.innerHTML = `
-      <div class="login-wrap">
-        <div class="login-card">
-          <div class="brand"><span class="dot"></span>SWINGLAB</div>
-          <p class="login-sub">Personal investing research lab. Sign in to continue.</p>
-          <form id="login-form">
-            <label>Username</label>
-            <input id="login-username" autocomplete="username" required>
-            <label>Password</label>
-            <input id="login-password" type="password" autocomplete="current-password" required>
-            <div class="login-error" id="login-error" hidden></div>
-            <button type="submit" class="btn primary" style="width:100%;margin-top:18px;padding:12px">Sign in</button>
-          </form>
-          <div class="demo-box">
-            <div class="eyebrow">Just visiting?</div>
-            <p>Use the demo account — full read access, nothing to set up.</p>
-            <div class="demo-creds">demo / demo1234</div>
-            <button class="btn" id="demo-login-btn" style="width:100%;margin-top:10px">Continue as demo</button>
-          </div>
-        </div>
+
+    const demoBox = `
+      <div class="demo-box">
+        <div class="eyebrow">Just visiting?</div>
+        <p>Use the demo account — full read access, nothing to set up.</p>
+        <div class="demo-creds">demo / demo1234</div>
+        <button class="btn" id="demo-login-btn" style="width:100%;margin-top:10px">Continue as demo</button>
       </div>`;
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await attemptLogin(document.getElementById('login-username').value.trim(), document.getElementById('login-password').value);
-    });
+
+    if (mode === 'signup'){
+      root.innerHTML = `
+        <div class="login-wrap">
+          <div class="login-card">
+            <div class="brand"><span class="dot"></span>SWINGLAB</div>
+            <p class="login-sub">Create your own login to research with.</p>
+            <form id="login-form">
+              <label>Username</label>
+              <input id="su-username" autocomplete="username" required>
+              <label>Password</label>
+              <input id="su-password" type="password" autocomplete="new-password" required>
+              <label>Confirm password</label>
+              <input id="su-password2" type="password" autocomplete="new-password" required>
+              <div class="login-error" id="login-error" hidden></div>
+              <button type="submit" class="btn primary" style="width:100%;margin-top:18px;padding:12px">Create account</button>
+            </form>
+            <p class="login-switch">Already have an account? <a href="#" id="switch-mode">Sign in</a></p>
+            ${demoBox}
+          </div>
+        </div>`;
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const u = document.getElementById('su-username').value.trim();
+        const p1 = document.getElementById('su-password').value;
+        const p2 = document.getElementById('su-password2').value;
+        const errEl = document.getElementById('login-error');
+        errEl.hidden = true;
+        if (p1 !== p2){ errEl.textContent = "Passwords don't match."; errEl.hidden = false; return; }
+        await attemptSignup(u, p1);
+      });
+      document.getElementById('switch-mode').addEventListener('click', (e) => { e.preventDefault(); showLogin('signin'); });
+    } else {
+      root.innerHTML = `
+        <div class="login-wrap">
+          <div class="login-card">
+            <div class="brand"><span class="dot"></span>SWINGLAB</div>
+            <p class="login-sub">Personal investing research lab. Sign in to continue.</p>
+            <form id="login-form">
+              <label>Username</label>
+              <input id="login-username" autocomplete="username" required>
+              <label>Password</label>
+              <input id="login-password" type="password" autocomplete="current-password" required>
+              <div class="login-error" id="login-error" hidden></div>
+              <button type="submit" class="btn primary" style="width:100%;margin-top:18px;padding:12px">Sign in</button>
+            </form>
+            <p class="login-switch">New here? <a href="#" id="switch-mode">Create an account</a></p>
+            ${demoBox}
+          </div>
+        </div>`;
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await attemptLogin(document.getElementById('login-username').value.trim(), document.getElementById('login-password').value);
+      });
+      document.getElementById('switch-mode').addEventListener('click', (e) => { e.preventDefault(); showLogin('signup'); });
+    }
     document.getElementById('demo-login-btn').addEventListener('click', () => attemptLogin('demo', 'demo1234'));
   }
 
@@ -484,6 +522,24 @@
       });
       if (!r.ok){ errEl.textContent = 'Wrong username or password.'; errEl.hidden = false; return; }
       CURRENT_USER = await r.json();
+      showApp();
+      renderUserChip();
+      await afterAuthBoot();
+    }catch(e){ errEl.textContent = 'Could not reach the server. Try again in a moment.'; errEl.hidden = false; }
+  }
+
+  async function attemptSignup(username, password){
+    const errEl = document.getElementById('login-error');
+    errEl.hidden = true;
+    if (!username || !password) return;
+    try{
+      const r = await fetch(`${API}/api/signup`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password}),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok){ errEl.textContent = d.detail || 'Could not create account.'; errEl.hidden = false; return; }
+      CURRENT_USER = d;
       showApp();
       renderUserChip();
       await afterAuthBoot();
@@ -559,7 +615,6 @@
     'strategy-lab': renderStrategyLab,
     'watchlist'   : renderWatchlist,
     'journal'     : renderJournal,
-    'journey'     : renderJourney,
     'methodology' : renderMethodology,
   };
 
@@ -627,7 +682,7 @@
   const STATIC_CMDS = [
     {label:'Home', hash:'#/'}, {label:'Strategy Lab', hash:'#/strategy-lab'},
     {label:'Watchlist', hash:'#/watchlist'}, {label:'Daily Journal', hash:'#/journal'},
-    {label:'Investing Journey', hash:'#/journey'}, {label:'Methodology', hash:'#/methodology'},
+    {label:'Methodology', hash:'#/methodology'},
   ];
   function openCmdk(){
     cmdkRoot.innerHTML = `<div class="cmdk-backdrop" id="cmdk-bd"><div class="cmdk"><input id="cmdk-input" placeholder="Search a company, or jump to a page…" autocomplete="off"><div class="cmdk-list" id="cmdk-list"></div></div></div>`;
@@ -1399,27 +1454,6 @@
     saveJournalEntry(journalCurrentDate, entry);
     input.value='';
     renderReviewed(entry);
-  }
-
-  /* ================================================================
-     JOURNEY
-  ================================================================ */
-  function renderJourney(){
-    const items = [
-      ['2026', 'Built the technical signal engine', 'Purged walk-forward validation, meta-labeling, and a portfolio simulator with real Indian transaction costs — the backtesting discipline everything else here is built on.'],
-      ['2026', 'Extended to 5 systematic strategies', 'Trend, momentum, value, price-strength and quality — each backtested across the Nifty 500 with real corporate-action adjustment, not just the 3 tickers the project started with.'],
-      ['2026', 'Found and fixed a real bug at scale', 'A transaction-cost wipeout only showed up once the universe grew from 50 to 500 stocks — fixed with sticky slot-filling, and documented rather than hidden.'],
-      ['2026', 'Added point-in-time fundamentals', 'Scraped and parsed real annual reports (revenue, profit, ROCE, free cash flow) with a 60-day reporting lag, so a backtest never uses a number before it was actually public.'],
-      ['2026', 'Shipped it as a live web app', 'FastAPI + SQLite, deployed on Render — any NSE stock, not just the pre-computed 500, analyzed on demand.'],
-      ['2026', 'Rebuilt it as a research lab', 'Fundamentals, valuation history, a long-term vs swing lens, a Strategy Lab, a watchlist and a daily journal — this page. The framework keeps growing as the questions I ask get better.'],
-    ];
-    $view.innerHTML = `
-      <div class="hero" style="padding:44px 0 6px"><div class="eyebrow">A Work In Progress</div><h1 style="font-size:clamp(26px,5vw,38px)">My Investing Journey</h1>
-      <p class="sub" style="margin-top:10px">This is a personal project, not a finished commercial product. It keeps changing as my own research process does.</p></div>
-      <div class="section">
-        <div class="timeline">${items.map(([yr,t,d]) => `<div class="tl-item"><div class="yr">${esc(yr)}</div><div class="t">${esc(t)}</div><div class="d">${esc(d)}</div></div>`).join('')}</div>
-      </div>
-    `;
   }
 
   /* ================================================================

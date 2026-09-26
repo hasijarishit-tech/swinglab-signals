@@ -37,6 +37,40 @@ def init_db() -> None:
                 updated_at TEXT NOT NULL
             )
         """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL,
+                salt TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+
+
+def get_user(username: str) -> dict | None:
+    with _conn() as c:
+        row = c.execute(
+            "SELECT username, password_hash, salt FROM users WHERE username = ?", (username,)
+        ).fetchone()
+        return None if row is None else {"username": row[0], "password_hash": row[1], "salt": row[2]}
+
+
+def create_user(username: str, password_hash: str, salt: str) -> bool:
+    """Returns False if the username is already taken. The PRIMARY KEY
+    constraint is the real guarantee against two simultaneous signups for
+    the same name both succeeding — the SELECT above it is just a cheap
+    pre-check for the normal (non-racing) case."""
+    with _conn() as c:
+        if c.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone():
+            return False
+        try:
+            c.execute(
+                "INSERT INTO users (username, password_hash, salt, created_at) VALUES (?, ?, ?, datetime('now'))",
+                (username, password_hash, salt),
+            )
+        except sqlite3.IntegrityError:
+            return False
+        return True
 
 
 def get_cached(ticker: str) -> dict | None:

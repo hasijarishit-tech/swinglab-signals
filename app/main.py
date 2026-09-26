@@ -73,14 +73,29 @@ class LoginBody(BaseModel):
 
 @app.post("/api/login")
 def login(body: LoginBody, response: Response):
-    if not auth.check_credentials(body.username, body.password):
+    username = body.username.strip()
+    if not auth.check_credentials(username, body.password):
         raise HTTPException(status_code=401, detail="Wrong username or password.")
-    token = auth.make_session_token(body.username)
+    token = auth.make_session_token(username)
     response.set_cookie(
         auth.COOKIE_NAME, token, max_age=auth.SESSION_MAX_AGE_SECONDS,
         httponly=True, samesite="lax",
     )
-    return {"username": body.username, "is_demo": body.username == auth.DEMO_USERNAME}
+    return {"username": username, "is_demo": username == auth.DEMO_USERNAME}
+
+
+@app.post("/api/signup")
+def signup(body: LoginBody, response: Response):
+    ok, error = auth.signup(body.username, body.password)
+    if not ok:
+        raise HTTPException(status_code=400, detail=error)
+    username = body.username.strip()
+    token = auth.make_session_token(username)
+    response.set_cookie(
+        auth.COOKIE_NAME, token, max_age=auth.SESSION_MAX_AGE_SECONDS,
+        httponly=True, samesite="lax",
+    )
+    return {"username": username, "is_demo": False}
 
 
 @app.post("/api/logout")
